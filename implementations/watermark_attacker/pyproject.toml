@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "WatermarkAttacker"
+version = "0.1.0"
+description = "A project for watermark attacking"
+requires-python = ">=3.11"
+dependencies = [
+  "accelerate",
+  "bm3d",
+  "compressai",
+  "diffusers",
+  "invisible-watermark",
+  "onnxruntime",
+  "opencv-python",
+  "scikit-image",
+  "torch",
+  "torch_fidelity",
+  "torchvision",
+  "transformers"
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
