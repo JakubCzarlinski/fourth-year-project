@@ -1,0 +1,9 @@
+diffusers
+transformers
+scipy
+accelerate
+open_clip_torch
+sentence-transformers
+matplotlib
+torchvision
+--extra-index-url https://download.pytorch.org/whl/cu113
