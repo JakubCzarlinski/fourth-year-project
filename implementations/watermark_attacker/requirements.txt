@@ -1,12 +1,13 @@
-accelerate
-bm3d
-compressai
-diffusers
-invisible-watermark
-onnxruntime
-opencv-python
-scikit-image
-torch
-torch_fidelity
-torchvision
-transformers
+# Please use poetry to install the dependencies. `poetry install`
+# accelerate
+# bm3d
+# compressai
+# diffusers
+# invisible-watermark
+# onnxruntime
+# opencv-python
+# scikit-image
+# torch
+# torch_fidelity
+# torchvision
+# transformers

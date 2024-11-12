@@ -1,10 +1,8 @@
-import inspect
 from typing import Callable, List, Optional, Union
 import torch
-from diffusers import StableDiffusion3Pipeline
-from diffusers.utils import deprecate, logging
+from diffusers.pipelines.stable_diffusion_3.pipeline_stable_diffusion_3 import StableDiffusion3Pipeline, retrieve_timesteps
+from diffusers.utils import logging
 from diffusers.pipelines.stable_diffusion import StableDiffusionPipelineOutput
-from diffusers.schedulers import DDIMScheduler
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
@@ -111,13 +109,9 @@ class ReSDPipeline(StableDiffusion3Pipeline):
             do_classifier_free_guidance=do_classifier_free_guidance,
             negative_prompt=negative_prompt,
         )
-        # text_embeddings = self._encode_prompt(
-        #     prompt, device, num_images_per_prompt, do_classifier_free_guidance, negative_prompt
-        # )
 
         if prompt2 is not None:
             prompt_embeds2, negative_prompt_embeds2, pooled_prompt_embeds2, negative_pooled_prompt_embeds2 = self.encode_prompt(
-            # text_embeddings2 = self.encode_prompt(
               prompt=prompt2,
               prompt_2=None,
               prompt_3=None,
@@ -125,9 +119,6 @@ class ReSDPipeline(StableDiffusion3Pipeline):
               do_classifier_free_guidance=do_classifier_free_guidance,
               negative_prompt=negative_prompt,
             )
-            # text_embeddings2 = self._encode_prompt(
-            #     prompt2, device, num_images_per_prompt, do_classifier_free_guidance, negative_prompt
-            # )
 
         if do_classifier_free_guidance:
           prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds], dim=0)
@@ -138,9 +129,9 @@ class ReSDPipeline(StableDiffusion3Pipeline):
             pooled_prompt_embeds2 = torch.cat([negative_pooled_prompt_embeds2, pooled_prompt_embeds2], dim=0)
 
         # 4. Prepare timesteps
-        self.scheduler.set_timesteps(num_inference_steps, device=device)
-        timesteps = self.scheduler.timesteps
-        # print(timesteps)
+        timesteps, num_inference_steps = retrieve_timesteps(self.scheduler, num_inference_steps, device)
+        num_warmup_steps = max(len(timesteps) - num_inference_steps * self.scheduler.order, 0)
+        self._num_timesteps = len(timesteps)
 
         # 5. Prepare latent variables
         if head_start_latents is None:
@@ -169,12 +160,9 @@ class ReSDPipeline(StableDiffusion3Pipeline):
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
         with self.progress_bar(total=num_inference_steps) as progress_bar:
             for i, t in enumerate(timesteps):
-                # print((i, t))
                 if not head_start_step or i >= head_start_step:  # if there is no head start or we reached the hs step
                     # expand the latents if we are doing classifier free guidance
-                    # print(latents.shape)
                     latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
-                    # latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
 
                     timestep = t.expand(latent_model_input.shape[0])
 
@@ -185,21 +173,16 @@ class ReSDPipeline(StableDiffusion3Pipeline):
                           timestep=timestep,
                           encoder_hidden_states=prompt_embeds,
                           pooled_projections=pooled_prompt_embeds,
-                          # joint_attention_kwargs=self.joint_attention_kwargs,
                           return_dict=False,
                       )[0]
-                        # noise_pred = self.unet(latent_model_input, t, encoder_hidden_states=text_embeddings).sample
                     else:
-                        # print(f'i = {i}, atteding to prompt2')
                         noise_pred = self.transformer(
                           hidden_states=latent_model_input,
                           timestep=timestep,
                           encoder_hidden_states=prompt_embeds2,
                           pooled_projections=pooled_prompt_embeds2,
-                          # joint_attention_kwargs=self.joint_attention_kwargs,
                           return_dict=False,
                       )[0]
-                        # noise_pred = self.unet(latent_model_input, t, encoder_hidden_states=text_embeddings2).sample
 
                     # perform guidance
                     if do_classifier_free_guidance:

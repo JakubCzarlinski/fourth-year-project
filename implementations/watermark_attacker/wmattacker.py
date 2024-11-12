@@ -162,14 +162,6 @@ class DiffWMAttacker(WMAttacker):
         self.noise_step = noise_step
         self.captions = captions
         print(f'Diffuse attack initialized with noise step {self.noise_step} and use prompt {len(self.captions)}')
-        # Find the closest timestep in the scheduler to the desired noise step
-        # min_diff = -1
-        # target = self.noise_step
-        # for step in self.pipe.scheduler.timesteps:
-        #   if min_diff == -1 or abs(step - target) < min_diff:
-        #     min_diff = abs(step - target)
-        #     closest_noise_step = step
-        # self.noise_step = closest_noise_step.item()
 
     def attack(self, image_paths, out_paths, return_latents=False, return_dist=False):
         with torch.no_grad():
@@ -206,6 +198,7 @@ class DiffWMAttacker(WMAttacker):
                 prompts = [""] * len(image_paths)
 
             for (img_path, out_path), prompt in tqdm(zip(zip(image_paths, out_paths), prompts)):
+                self.pipe.scheduler.set_begin_index(1000-self.noise_step)
                 img = Image.open(img_path)
                 img = np.asarray(img) / 255
                 img = (img - 0.5) * 2
