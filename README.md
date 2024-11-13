@@ -1,6 +1,6 @@
 # Fourth Year Project
 
-- `implementations/`: Contains paper implementations with modifications and
+- `./implementations/`: Contains paper implementations with modifications and
   improvements for portability. Each implementation is a separate directory, and
   contains a `README.md` file with instructions on how to run the code. It
   should contain a `pyproject.toml` instead of a `requirements.txt` file. This
@@ -9,3 +9,7 @@
   about the dependencies it installs, and it creates a `poetry.lock` file that
   specifies the exact versions of the dependencies that were installed. This
   makes it easier to reproduce the environment in which the code was run.
+
+- `./lint.sh`: A script that runs `yapf` and `isort` on the files in the
+  project. To install `yapf` and `isort`, run `pip install yapf isort`. To run
+  the script, run `./lint.sh`.
