@@ -1,5 +1,7 @@
-from diffusers import StableDiffusion3Pipeline, SD3Transformer2DModel, BitsAndBytesConfig
 import torch
+from diffusers import BitsAndBytesConfig
+from diffusers import SD3Transformer2DModel
+from diffusers import StableDiffusion3Pipeline
 
 # Check if a GPU is available and set the device accordingly
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -27,7 +29,6 @@ pipe = StableDiffusion3Pipeline.from_pretrained(
 )
 # pipe.enable_model_cpu_offload()
 pipe.to(device)
-
 
 prompt = "Astronaut in a jungle, cold color palette, muted colors, detailed, 8k"
 image = pipe(prompt).images[0]
