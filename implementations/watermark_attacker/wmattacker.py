@@ -189,7 +189,7 @@ class DiffWMAttacker(WMAttacker):
   ):
     self.pipe = pipe
     self.BATCH_SIZE = batch_size
-    self.device = pipe.device
+    self.device = "cuda"
     self.noise_step = noise_step
     self.captions = captions
     print(
