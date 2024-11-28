@@ -21,6 +21,7 @@ torchmetrics = "^1.6.0"
 ipykernel = "^6.29.5"
 xformers = "^0.0.28.post3"
 seaborn = "^0.13.2"
+bitsandbytes = "^0.44.1"
 
 
 [build-system]
