@@ -18,6 +18,8 @@ transformers = "^4.46.2"
 torch = "^2.5.1"
 matplotlib = "^3.9.2"
 torchmetrics = "^1.6.0"
+ipykernel = "^6.29.5"
+xformers = "^0.0.28.post3"
 
 
 [build-system]
