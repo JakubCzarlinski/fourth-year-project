@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "ddd"
+version = "0.1.0"
+description = "ddd watermarking"
+authors = ["Jakub Czarlinski <jakubczarlinski@gmail.com>"]
+license = "MIT License"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+diffusers = "^0.31.0"
+numpy = "^2.1.3"
+open-clip-torch = "^2.29.0"
+sentence-transformers = "^3.3.0"
+torchvision = "^0.20.1"
+tqdm = "^4.67.0"
+transformers = "^4.46.2"
+torch = "^2.5.1"
+matplotlib = "^3.9.2"
+torchmetrics = "^1.6.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
