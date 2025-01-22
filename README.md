@@ -10,6 +10,8 @@
   specifies the exact versions of the dependencies that were installed. This
   makes it easier to reproduce the environment in which the code was run.
 
+- Adding diffJPEG experiments.
+
 - `./lint.sh`: A script that runs `yapf` and `isort` on the files in the
   project. To install `yapf` and `isort`, run `pip install yapf isort`. To run
   the script, run `./lint.sh`.
