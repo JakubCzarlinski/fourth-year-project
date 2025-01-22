@@ -4,6 +4,7 @@ from PIL import Image
 from torchvision import transforms as tfms
 from torchvision.utils import make_grid
 from torchvision.utils import save_image
+from typing import Union, List, Optional, Callable
 
 totensor = tfms.ToTensor()
 topil = tfms.ToPILImage()
@@ -112,8 +113,8 @@ def single_text_embedding(pipe, prompt):
 def sample(
     self,
     text_embeddings,
-    masked_images: torch.FloatTensor | Image.Image,
-    mask: torch.FloatTensor | Image.Image,
+    masked_images: Union[torch.FloatTensor, Image.Image],
+    mask: Union[torch.FloatTensor, Image.Image],
     height: int = 512,
     width: int = 512,
     num_inference_steps: int = 50,

@@ -1,0 +1,15 @@
+numpy
+ipykernel
+diffusers
+transformers
+accelerate
+open_clip_torch
+sentence-transformers
+matplotlib
+torchvision
+xformers
+torch
+seaborn
+bitsandbytes
+tqdm
+torchmetrics
