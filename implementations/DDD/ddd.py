@@ -278,8 +278,14 @@ def get_grad(
       random_t=random_t,
   )
 
+  print("Attack Forward outputs", type(_latents[1]), _latents[1].shape)
+
+  ####################herreeee
+
   loss_value = attn_controller.loss(loss_mask, loss_depth)
   loss = loss_value
+  print("type LOSS: ", type(loss) )
+  print("LOSS: ", loss )
   grad = torch.autograd.grad(loss, [cur_masked_image])[0] * (1 - cur_mask)
 
   return grad, loss_value.item()
