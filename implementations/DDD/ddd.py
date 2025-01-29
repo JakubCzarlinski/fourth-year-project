@@ -191,16 +191,23 @@ def attack_forward(
     eta: float = 0.0,
     random_t: torch.Tensor = None,
 ):
+  # Dimensions of the latent representation of the original image
   num_channels_latents = self.vae.config.latent_channels
   latents_shape = (1, num_channels_latents, height // 8, width // 8)
+  # Random Gaussian noise is generated for the latents
   latents = torch.randn(
       latents_shape, device=utils.device, dtype=text_embeddings.dtype
   )
 
+  # The mask is downsized to match the latent space size of the image
   mask = torch.nn.functional.interpolate(mask, size=(height // 8, width // 8))
   mask = torch.cat([mask] * 2)
 
+  # When a VAE encodes an image, it doesn't produce a single fixed latent representation
+  # Instead, it produces a distribution in the latent space
+  # The .sample() method draws a random sample from this distribution.
   masked_image_latents = self.vae.encode(masked_image).latent_dist.sample()
+  # Stable diffusion normalization constant
   masked_image_latents = 0.18215 * masked_image_latents
   masked_image_latents = torch.cat([masked_image_latents] * 2)
 
