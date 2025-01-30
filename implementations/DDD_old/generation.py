@@ -40,14 +40,14 @@ pipe_inpaint.safety_checker = None
 for name, param in pipe_inpaint.unet.named_parameters():
     param.requires_grad = False
 
-file_iteration_names = [str(i) for i in range(1, 101) if i==10]
+file_iteration_names = [str(i) for i in range(1, 101) if i==2]
 
 for file_name in file_iteration_names:
 
-    init_image = Image.open(f'./dataset/{file_name}.png').convert('RGB').resize((512,512))
+    init_image = Image.open(f'1_original.png').convert('RGB').resize((512,512))
     mask_image = Image.open(f'./dataset/{file_name}_masked.png').convert('RGB')
     mask_image = ImageOps.invert(mask_image).resize((512,512))
-    adv_image =  Image.open(f'./dataset_adv/{file_name}_adv.png')
+    adv_image =  Image.open(f'1_complex_defended.png')
 
 
     prompts = ['change the background of the image to a beach']
@@ -87,7 +87,7 @@ for file_name in file_iteration_names:
 
             image_adv = recover_image(image_adv, init_image, mask_image)
 
-            image_adv.save(f'dataset_results/{file_name}_adv.png')
+            image_adv.save(f'{file_name}_adv_inpaint.png')
             image_nat.save(f'{file_name}_inpaint.png')
 
 
@@ -109,7 +109,7 @@ for file_name in file_iteration_names:
 
             fig.suptitle(f"{prompt} - {SEED}", fontsize=20)
             fig.tight_layout()
-            plt.savefig(f'dataset_results/{file_name}_result.png')
+            plt.savefig(f'{file_name}_result.png')
             plt.show()
             
             plt.clf()

@@ -1,0 +1,6 @@
+Loading pipeline components...:   0%|          | 0/6 [00:00<?, ?it/s]Loading pipeline components...:  33%|███▎      | 2/6 [00:00<00:00,  7.73it/s]Loading pipeline components...: 100%|██████████| 6/6 [00:00<00:00, 22.36it/s]
+Traceback (most recent call last):
+  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/attack.py", line 332, in <module>
+    random_t = ddd.get_random_t(t_schedule, t_schedule_bound)
+               ^^^^^^^^^^^^^^^^
+AttributeError: module 'ddd' has no attribute 'get_random_t'
