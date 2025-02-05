@@ -178,9 +178,7 @@ class MyCrossAttnProcessor:
 
     self.attn_controller(hidden_states, self.module_name)
     return hidden_states
-import torch
-import torch.nn.functional as F
-import numpy as np
+
 
 def attack_forward(
     self: StableDiffusionInpaintPipeline,
@@ -194,61 +192,37 @@ def attack_forward(
     eta: float = 0.0,
     random_t: torch.Tensor = None,
 ):
-    num_channels_latents = self.vae.config.latent_channels
-    latents_shape = (1, num_channels_latents, height // 8, width // 8)
-    latents = torch.randn(
-        latents_shape, device=utils.device, dtype=text_embeddings.dtype
-    )
+  num_channels_latents = self.vae.config.latent_channels
+  latents_shape = (1, num_channels_latents, height // 8, width // 8)
+  latents = torch.randn(
+      latents_shape, device=utils.device, dtype=text_embeddings.dtype
+  )
 
-    mask = F.interpolate(mask, size=(height // 8, width // 8))
-    mask = torch.cat([mask] * 2)
+  mask = torch.nn.functional.interpolate(mask, size=(height // 8, width // 8))
+  mask = torch.cat([mask] * 2)
 
-    masked_image_latents = self.vae.encode(masked_image).latent_dist.sample()
-    masked_image_latents = 0.18215 * masked_image_latents
-    masked_image_latents = torch.cat([masked_image_latents] * 2)
+  masked_image_latents = self.vae.encode(masked_image).latent_dist.sample()
+  masked_image_latents = 0.18215 * masked_image_latents
+  masked_image_latents = torch.cat([masked_image_latents] * 2)
 
+  self.scheduler.set_timesteps(num_inference_steps)
+  # timesteps_tensor = self.scheduler.timesteps.to(utils.device)
+  timesteps_tensor = random_t
 
-    self.scheduler.set_timesteps(num_inference_steps)
-    timesteps_tensor = random_t
-
-    for _, t in enumerate(timesteps_tensor):
-        noise_pred_cfg, noise_pred_text, noise_pred_uncond = pred_noise(
-            unet=self.unet,
-            text_embeddings=text_embeddings,
-            latents=latents,
-            mask=mask,
-            masked_image_latents=masked_image_latents,
-            t=t,
-            guidance_scale=guidance_scale,
-        )
-        latents = add_dft_noise(self, latents, text_embeddings, t, guidance_scale, mask, masked_image_latents)
-        latents = self.scheduler.step(noise_pred_cfg, t, latents).prev_sample
-
-    return latents, [noise_pred_text, noise_pred_uncond]
-
-
-def add_dft_noise(self, latents: torch.Tensor, text_embeddings: torch.Tensor, t, guidance_scale, mask, masked_image_latents) -> torch.Tensor:
-    latents_fft = torch.fft.fftshift(torch.fft.fft2(latents)) #dct.dct_2d(latents)
-    # text_fft = torch.fft.fftshift(torch.fft.fft2(text_embeddings))
-    # mask_fft = torch.fft.fftshift(torch.fft.fft2(mask))
-    # masked_latents_fft = torch.fft.fftshift(torch.fft.fft2(masked_image_latents))
-
-    noise_pred_freq = pred_noise(
+  for _, t in enumerate(timesteps_tensor):
+    noise_pred_cfg, noise_pred_text, noise_pred_uncond = pred_noise(
         unet=self.unet,
         text_embeddings=text_embeddings,
-        latents=latents_fft.real,
-        mask=mask, 
-        masked_image_latents=masked_image_latents,  
+        latents=latents,
+        mask=mask,
+        masked_image_latents=masked_image_latents,
         t=t,
-        guidance_scale=guidance_scale,  
-    )[0] 
+        guidance_scale=guidance_scale,
+    )
 
-    latents_dct_noisy = latents_fft + noise_pred_freq
+    latents = self.scheduler.step(noise_pred_cfg, t, latents).prev_sample
 
-    # Perform a 2D inverse DCT
-    latents_with_noise = torch.fft.ifft2(torch.fft.ifftshift(latents_dct_noisy)).real #dct.idct_2d(latents_dct_noisy)
-
-    return latents_with_noise
+  return latents, [noise_pred_text, noise_pred_uncond]
 
 
 def pred_noise(
@@ -260,7 +234,6 @@ def pred_noise(
     t: torch.Tensor,
     guidance_scale: float,
 ):
-  
   latent_model_input = torch.cat([latents] * 2)
   latent_model_input = torch.cat(
       [latent_model_input, mask, masked_image_latents], dim=1
@@ -275,6 +248,7 @@ def pred_noise(
       noise_pred_text - noise_pred_uncond
   )
   return noise_pred_cfg, noise_pred_text, noise_pred_uncond
+
 
 def get_grad(
     cur_mask: torch.Tensor,
@@ -358,39 +332,6 @@ def disrupt(
   gen.manual_seed(1003)
 
   for j in iterator:
-    if j in kwargs["inter_print"]:
-      infer_dict = kwargs["infer_dict"]
-      with torch.no_grad():
-        inter_adv = (X_adv / 2 + 0.5).clamp(0, 1)
-        inter_adv = to_pil(inter_adv[0]).convert("RGB")
-        inter_adv = utils.recover_image(
-            inter_adv,
-            infer_dict["init_image"],
-            infer_dict["mask"],
-            background=True
-        )
-        if infer_unet is not None:
-          temp = pipe.unet
-          pipe.unet = infer_unet
-        image_nat = pipe(
-            prompt=infer_dict["prompt"],
-            image=inter_adv,
-            mask_image=infer_dict["mask"],
-            eta=1,
-            num_inference_steps=infer_dict["num_inference_steps"],
-            guidance_scale=infer_dict["guidance_scale"],
-            strength=infer_dict["strength"],
-            generator=gen.manual_seed(1003),
-        ).images[0]
-        inter_adv = utils.recover_image(
-            image_nat, infer_dict["init_image"], infer_dict["mask"]
-        )
-        inter_adv.save(
-            f"{infer_dict['path']}/{infer_dict['prefix']}_{infer_dict['prompt']}_{j}.png"
-        )
-        if infer_unet is not None:
-          pipe.unet = temp
-      attn_controller.zero_attn_probs()
 
     random_t = get_random_t(t_schedule, t_schedule_bound)
     all_grads = []

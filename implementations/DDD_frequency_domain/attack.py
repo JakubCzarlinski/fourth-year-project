@@ -55,7 +55,7 @@ def dict_to_args_parser(input_dict):
 args = dict_to_args_parser(args_dict)
 
 # load img from img/{testimg_filename}.png, masked img is also required img/{testimg_filename}_masked.png
-testimg_filename = "003"
+testimg_filename = "008"
 device = "cuda"
 dtype = torch.float16
 
@@ -245,7 +245,7 @@ for step in range(args.opt_iters):
 
 input_text_embedding = text_embeddings.detach()
 input_text_embeddings = torch.cat([input_text_embedding] * 2)
-    
+
 # pipe_inpaint.to(torch_dtype=torch.float16)
 
 # for testimg_filename in test_file_list:
