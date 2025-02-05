@@ -13,6 +13,10 @@ from diffusers import StableDiffusionInpaintPipeline
 import torchvision.transforms as T
 from typing import Union, List, Optional, Callable
 from utils import preprocess, prepare_mask_and_masked_image, recover_image, prepare_image
+from diff_jpeg import DiffJPEGCoding
+
+diff_jpeg_coding_module = DiffJPEGCoding()
+
 to_pil = T.ToPILImage()
 
 pipe_inpaint = StableDiffusionInpaintPipeline.from_pretrained(
@@ -100,8 +104,18 @@ def compute_grad(cur_mask, cur_masked_image, prompt, target_image, **kwargs):
     cur_masked_image = cur_masked_image.clone()
     cur_mask.requires_grad = False
     cur_masked_image.requires_grad_()
+
+    print(cur_masked_image.shape, type(cur_masked_image))
+    # cur_masked_image = cur_masked_image.squeeze(0)
+    jpeg_quality = torch.tensor([50]).to("cuda")
+    compressed_image = cur_masked_image.clone()
+    compressed_image = (compressed_image / 2 + 0.5).clamp(0, 1) * 255
+    compressed_image = diff_jpeg_coding_module(image_rgb=compressed_image, jpeg_quality=jpeg_quality).to("cuda")
+    compressed_image = ((compressed_image / 255 - 0.5) * 2).clamp(-1, 1).to(torch.float16)
+
+
     image_nat = attack_forward(pipe_inpaint,mask=cur_mask,
-                               masked_image=cur_masked_image,
+                               masked_image=compressed_image,
                                prompt=prompt,
                                **kwargs)
     
@@ -175,12 +189,12 @@ strength = 0.7
 guidance_scale = 7.5
 num_inference_steps = 4
 
-file_iteration_names = [str(i) for i in range(36, 101) if i!=36 and i!=86]
+file_iteration_names = ["010"]
 
 for file_iteration in file_iteration_names:
 
-    init_image = Image.open(f'../dataset/{file_iteration}.png').convert('RGB').resize((400,400))
-    mask_image = Image.open(f'../dataset/{file_iteration}_masked.png').convert('RGB')
+    init_image = Image.open(f'../images/{file_iteration}.png').convert('RGB').resize((400,400))
+    mask_image = Image.open(f'../images/{file_iteration}_masked.png').convert('RGB')
     mask_image = ImageOps.invert(mask_image).resize((400,400))
 
     cur_mask, cur_masked_image = prepare_mask_and_masked_image(init_image, mask_image)
@@ -209,7 +223,7 @@ for file_iteration in file_iteration_names:
     adv_image = to_pil(adv_X[0]).convert("RGB")
     adv_image = recover_image(adv_image, init_image, mask_image, background=True)
     adv_image
-    adv_image.save(f'../dataset_adv/{file_iteration}_adv.png')
+    adv_image.save(f'../adversarial/{file_iteration}_adv.png')
 
 # prompt = "man riding a motorcycle at night"
 # prompt = "two men in a wedding"
