@@ -41,7 +41,7 @@ pipe_inpaint.safety_checker = None
 for name, param in pipe_inpaint.unet.named_parameters():
   param.requires_grad = False
 
-file_iteration_names = ["003"]
+file_iteration_names = ["008"]
 
 for file_name in file_iteration_names:
 
@@ -52,7 +52,7 @@ for file_name in file_iteration_names:
   mask_image = ImageOps.invert(mask_image).resize((512, 512))
   adv_image = Image.open(f'./adversarial/{file_name}_adv_compressed.png')
 
-  prompts = ['A dog in the park', 'A dog on a road with traffic lights without bench', 'A dog on top a bed in a bedroom indoors']
+  prompts = ['Two people on an airplane', 'Two people in front of the eiffel tower', 'Two people on a pier']
 
   SEED = 1007
 

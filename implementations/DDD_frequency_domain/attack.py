@@ -206,6 +206,7 @@ for step in range(args.opt_iters):
   bsz = latents.shape[0]
   timesteps = torch.randint(0, 1000, (bsz,), device=latents.device)
   timesteps = timesteps.long()
+  print(timesteps)
 
   noisy_latents = pipe_inpaint.scheduler.add_noise(latents, noise, timesteps)
 

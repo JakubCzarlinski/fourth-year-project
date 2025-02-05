@@ -220,10 +220,27 @@ def attack_forward(
         guidance_scale=guidance_scale,
     )
 
+    latents_frequency_noise = add_dft_noise(self, latents, text_embeddings, t, guidance_scale, mask, masked_image_latents)
+    latents = self.scheduler.step(latents_frequency_noise, t, latents).prev_sample
     latents = self.scheduler.step(noise_pred_cfg, t, latents).prev_sample
 
   return latents, [noise_pred_text, noise_pred_uncond]
 
+def add_dft_noise(self, latents: torch.Tensor, text_embeddings: torch.Tensor, t, guidance_scale, mask, masked_image_latents) -> torch.Tensor:
+    latents_fft = torch.fft.fft2(torch.fft.fftshift(latents))
+    masked_image_latents_fft = torch.fft.fft2(torch.fft.fftshift(masked_image_latents))
+
+    noise_pred_freq = pred_noise(
+        unet=self.unet,
+        text_embeddings=text_embeddings,
+        latents=latents_fft.real,
+        mask=mask, 
+        masked_image_latents=masked_image_latents_fft.real,  
+        t=t,
+        guidance_scale=guidance_scale,  
+    )[0] 
+
+    return noise_pred_freq
 
 def pred_noise(
     unet: UNet2DConditionModel,
