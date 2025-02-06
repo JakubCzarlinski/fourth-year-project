@@ -18,6 +18,8 @@ from tqdm import tqdm
 import torch_dct as dct
 
 to_pil = transforms.ToPILImage()
+from diff_jpeg import DiffJPEGCoding
+diff_jpeg_coding_module = DiffJPEGCoding()
 
 
 class AttnController:
@@ -250,7 +252,7 @@ def pred_noise(
   return noise_pred_cfg, noise_pred_text, noise_pred_uncond
 
 
-def get_grad(
+def get_grad_original(
     cur_mask: torch.Tensor,
     cur_masked_image: torch.Tensor,
     text_embeddings: torch.Tensor,
@@ -275,6 +277,50 @@ def get_grad(
       pipe,
       mask=cur_mask,
       masked_image=cur_masked_image,
+      text_embeddings=text_embeddings,
+      random_t=random_t,
+  )
+
+  loss_value = attn_controller.loss(loss_mask, loss_depth)
+  loss = loss_value
+  grad = torch.autograd.grad(loss, [cur_masked_image])[0] * (1 - cur_mask)
+
+  return grad, loss_value.item()
+
+def get_grad_diffjpeg(
+    cur_mask: torch.Tensor,
+    cur_masked_image: torch.Tensor,
+    text_embeddings: torch.Tensor,
+    pipe: StableDiffusionInpaintPipeline,
+    attn_controller: AttnController,
+    loss_depth: list,
+    loss_mask: bool,
+    random_t: torch.Tensor,
+):
+  torch.set_grad_enabled(True)
+  # cur_mask = cur_mask.clone()
+  # cur_masked_image = cur_masked_image.clone()
+  cur_mask.requires_grad = False
+  cur_masked_image.requires_grad_()
+
+  # Zero the gradients
+  cur_mask.grad = None
+  cur_masked_image.grad = None
+
+  jpeg_quality = torch.tensor([50]).to("cuda")
+  compressed_image = cur_masked_image.clone()
+  compressed_image = (compressed_image / 2 + 0.5).clamp(0, 1) * 255
+  compressed_image = diff_jpeg_coding_module(image_rgb=compressed_image, jpeg_quality=jpeg_quality).to("cuda")
+  compressed_image = ((compressed_image / 255 - 0.5) * 2).clamp(-1, 1).to(torch.float16)
+  print(compressed_image.shape, cur_masked_image.shape)
+  print(type(compressed_image), type(cur_masked_image))
+  print(compressed_image[0][0].min(), compressed_image[0][0].max())
+  print(cur_masked_image[0][0].min(), cur_masked_image[0][0].max())
+  # Run the forward pass to pass the gradients
+  _image_nat, _latents = attack_forward(
+      pipe,
+      mask=cur_mask,
+      masked_image=compressed_image,
       text_embeddings=text_embeddings,
       random_t=random_t,
   )
@@ -321,6 +367,7 @@ def disrupt(
     infer_unet=None,
     grad_reps=5,
     target_image=0,
+    diffjpeg=False,
     **kwargs
 ):
   X_adv = X.clone()
@@ -332,56 +379,34 @@ def disrupt(
   gen.manual_seed(1003)
 
   for j in iterator:
-    if j in kwargs["inter_print"]:
-      infer_dict = kwargs["infer_dict"]
-      with torch.no_grad():
-        inter_adv = (X_adv / 2 + 0.5).clamp(0, 1)
-        inter_adv = to_pil(inter_adv[0]).convert("RGB")
-        inter_adv = utils.recover_image(
-            inter_adv,
-            infer_dict["init_image"],
-            infer_dict["mask"],
-            background=True
-        )
-        if infer_unet is not None:
-          temp = pipe.unet
-          pipe.unet = infer_unet
-        image_nat = pipe(
-            prompt=infer_dict["prompt"],
-            image=inter_adv,
-            mask_image=infer_dict["mask"],
-            eta=1,
-            num_inference_steps=infer_dict["num_inference_steps"],
-            guidance_scale=infer_dict["guidance_scale"],
-            strength=infer_dict["strength"],
-            generator=gen.manual_seed(1003),
-        ).images[0]
-        inter_adv = utils.recover_image(
-            image_nat, infer_dict["init_image"], infer_dict["mask"]
-        )
-        inter_adv.save(
-            f"{infer_dict['path']}/{infer_dict['prefix']}_{infer_dict['prompt']}_{j}.png"
-        )
-        if infer_unet is not None:
-          pipe.unet = temp
-      attn_controller.zero_attn_probs()
-
     random_t = get_random_t(t_schedule, t_schedule_bound)
     all_grads = []
     value_losses = []
     text_embed = get_random_emb(text_embeddings)
 
     for _ in range(grad_reps):
-      c_grad, loss_value = get_grad(
-          cur_mask=cur_mask,
-          cur_masked_image=X_adv,
-          text_embeddings=text_embed,
-          pipe=pipe,
-          attn_controller=attn_controller,
-          loss_depth=loss_depth,
-          loss_mask=loss_mask,
-          random_t=random_t,
-      )
+      if diffjpeg:
+        c_grad, loss_value = get_grad_diffjpeg(
+            cur_mask=cur_mask,
+            cur_masked_image=X_adv,
+            text_embeddings=text_embed,
+            pipe=pipe,
+            attn_controller=attn_controller,
+            loss_depth=loss_depth,
+            loss_mask=loss_mask,
+            random_t=random_t,
+        )
+      else:
+          c_grad, loss_value = get_grad_original(
+            cur_mask=cur_mask,
+            cur_masked_image=X_adv,
+            text_embeddings=text_embed,
+            pipe=pipe,
+            attn_controller=attn_controller,
+            loss_depth=loss_depth,
+            loss_mask=loss_mask,
+            random_t=random_t,
+        )
 
       all_grads.append(c_grad.detach())
       value_losses.append(loss_value)
