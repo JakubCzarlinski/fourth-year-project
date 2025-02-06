@@ -296,6 +296,7 @@ def get_grad_diffjpeg(
     loss_depth: list,
     loss_mask: bool,
     random_t: torch.Tensor,
+    grad_reps = 4
 ):
   torch.set_grad_enabled(True)
   # cur_mask = cur_mask.clone()
@@ -307,7 +308,7 @@ def get_grad_diffjpeg(
   cur_mask.grad = None
   cur_masked_image.grad = None
 
-  jpeg_quality = torch.tensor([50]).to("cuda")
+  jpeg_quality = torch.tensor([(grad_reps+1)*10]).to("cuda")
   compressed_image = cur_masked_image.clone()
   compressed_image = (compressed_image / 2 + 0.5).clamp(0, 1) * 255
   compressed_image = diff_jpeg_coding_module(image_rgb=compressed_image, jpeg_quality=jpeg_quality).to("cuda")
@@ -384,7 +385,7 @@ def disrupt(
     value_losses = []
     text_embed = get_random_emb(text_embeddings)
 
-    for _ in range(grad_reps):
+    for greps in range(grad_reps):
       if diffjpeg:
         c_grad, loss_value = get_grad_diffjpeg(
             cur_mask=cur_mask,
@@ -395,6 +396,7 @@ def disrupt(
             loss_depth=loss_depth,
             loss_mask=loss_mask,
             random_t=random_t,
+            grad_reps = greps
         )
       else:
           c_grad, loss_value = get_grad_original(
