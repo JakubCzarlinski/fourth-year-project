@@ -1,3 +1,7 @@
+"""
+To run set the image number in this file before submitting the sbatch
+"""
+
 import os
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -70,7 +74,7 @@ dtype = torch.float16
 
 model_version = "stabilityai/stable-diffusion-2-inpainting"
 
-filenames = ["011"]
+filenames = ["008"]
 
 for testimg_filename in filenames:
   nf4_config = BitsAndBytesConfig(
@@ -405,7 +409,7 @@ for testimg_filename in filenames:
   infer_dict["inter_print"] = []
 
   # iters = 100
-  iters = 250
+  iters = 300
   grad_reps = 7
   loss_mask = True
   eps = 12

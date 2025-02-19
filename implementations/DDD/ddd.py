@@ -1,3 +1,7 @@
+"""
+todo: change everything using grad_reps to just use quality for clarity
+"""
+
 from typing import Union
 
 import numpy as np
@@ -15,7 +19,6 @@ from torchmetrics.image.ssim import (
 from torchmetrics.image.ssim import StructuralSimilarityIndexMeasure as SSIM
 from torchvision import transforms
 from tqdm import tqdm
-import torch_dct as dct
 
 to_pil = transforms.ToPILImage()
 from diff_jpeg import DiffJPEGCoding
@@ -308,7 +311,7 @@ def get_grad_diffjpeg(
   cur_mask.grad = None
   cur_masked_image.grad = None
 
-  jpeg_quality = torch.tensor([(grad_reps+1)*14]).to("cuda")
+  jpeg_quality = torch.tensor([grad_reps]).to("cuda")
   compressed_image = cur_masked_image.clone()
   compressed_image = (compressed_image / 2 + 0.5).clamp(0, 1) * 255
   compressed_image = diff_jpeg_coding_module(image_rgb=compressed_image, jpeg_quality=jpeg_quality).to("cuda")
@@ -374,6 +377,7 @@ def disrupt(
   x_dim = len(X.shape) - 1
   gen = torch.Generator(device='cuda')
   gen.manual_seed(1003)
+  count = 0
 
   for j in iterator:
     random_t = get_random_t(t_schedule, t_schedule_bound)
@@ -381,8 +385,14 @@ def disrupt(
     value_losses = []
     text_embed = get_random_emb(text_embeddings)
 
+    # The set JPEG quality for this iteration running between 20 and 100
+    # quality = j % 80 + 20
+    
     for greps in range(grad_reps):
       if diffjpeg:
+        """change to only update every 3 iters"""
+        quality = count % 80 + 20 
+        count += 1
         # Run twice on different cur_mask and cur_masked_image
         c_grad, loss_value = get_grad_diffjpeg(
             cur_mask=cur_mask,
@@ -393,7 +403,7 @@ def disrupt(
             loss_depth=loss_depth,
             loss_mask=loss_mask,
             random_t=random_t,
-            grad_reps = greps
+            grad_reps = quality
         )
       else:
           c_grad, loss_value = get_grad_original(
