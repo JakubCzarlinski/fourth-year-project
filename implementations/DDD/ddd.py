@@ -308,15 +308,11 @@ def get_grad_diffjpeg(
   cur_mask.grad = None
   cur_masked_image.grad = None
 
-  jpeg_quality = torch.tensor([(grad_reps+1)*10]).to("cuda")
+  jpeg_quality = torch.tensor([(grad_reps+1)*14]).to("cuda")
   compressed_image = cur_masked_image.clone()
   compressed_image = (compressed_image / 2 + 0.5).clamp(0, 1) * 255
   compressed_image = diff_jpeg_coding_module(image_rgb=compressed_image, jpeg_quality=jpeg_quality).to("cuda")
-  compressed_image = ((compressed_image / 255 - 0.5) * 2).clamp(-1, 1).to(torch.float16)
-  print(compressed_image.shape, cur_masked_image.shape)
-  print(type(compressed_image), type(cur_masked_image))
-  print(compressed_image[0][0].min(), compressed_image[0][0].max())
-  print(cur_masked_image[0][0].min(), cur_masked_image[0][0].max())
+  compressed_image = ((torch.abs(compressed_image) / 255 - 0.5) * 2).clamp(-1, 1).to(torch.float16)
   # Run the forward pass to pass the gradients
   _image_nat, _latents = attack_forward(
       pipe,
@@ -387,6 +383,7 @@ def disrupt(
 
     for greps in range(grad_reps):
       if diffjpeg:
+        # Run twice on different cur_mask and cur_masked_image
         c_grad, loss_value = get_grad_diffjpeg(
             cur_mask=cur_mask,
             cur_masked_image=X_adv,
@@ -463,4 +460,4 @@ def grad_to_adv(
   d_x = X_adv - X.detach()
   d_x_norm = torch.renorm(d_x, p=2, dim=0, maxnorm=eps)
 
-  return torch.clamp(X + d_x_norm, clamp_min, clamp_max)
+  return X + d_x_norm

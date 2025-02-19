@@ -70,7 +70,7 @@ dtype = torch.float16
 
 model_version = "stabilityai/stable-diffusion-2-inpainting"
 
-filenames = ["001", "002", "003", "004", "005", "006", "007", "008"]
+filenames = ["011"]
 
 for testimg_filename in filenames:
   nf4_config = BitsAndBytesConfig(
@@ -467,7 +467,7 @@ for testimg_filename in filenames:
   img_path = path + "/img"
   adv_path = path + "/adv"
   result = torch.load(f'{adv_path}/adv.pt')[0]
-  adv_X = (result / 2 + 0.5).clamp(0, 1)
+  adv_X = (result / 2 + 0.5)#.clamp(0, 1)
   adv_image = to_pil(adv_X.to(torch.float32)).convert("RGB")
   adv_image = utils.recover_image(
       adv_image, init_image, mask_image, background=True
