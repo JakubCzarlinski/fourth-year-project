@@ -344,25 +344,33 @@ def get_random_emb(embs):
   rand_pos = np.random.randint(0, len(embs))
   return embs[rand_pos]
 
+import torch
+
 def maskGenerator(cur_mask):
-    box_shape = (cur_mask.shape[2] // 4, cur_mask.shape[3] // 4)
-    overlap = 0
-    while overlap < box_shape[0]*box_shape[1]//4:
-      rtl = (random.randint(0, cur_mask.shape[2]-box_shape[0]), random.randint(0, cur_mask.shape[3]-box_shape[1]))
-      random_quarter = torch.ones_like(cur_mask)
-      random_quarter[:, :, rtl[0]:rtl[0]+box_shape[0], rtl[1]:rtl[1]+box_shape[1]] = 0
+    assert cur_mask.ndim == 4 and cur_mask.shape[0] == 1 and cur_mask.shape[1] == 1, "Expected shape (1,1,H,W)"
 
-        
-      overlap_mask = (random_quarter+cur_mask).clamp(0, 1)
-      overlap = (cur_mask.shape[2] * cur_mask.shape[3]) - overlap_mask.to(torch.float64).sum().item()
+    mask = cur_mask[0, 0] 
     
+    binary_mask = (mask == 0).to(torch.float32)
 
-    # print(type(random_quarter))
-    # print(random_quarter.shape)
-    # print(random_quarter[0][0].min())
-    # print(random_quarter[0][0].max())
+    H, W = mask.shape
 
-    return overlap_mask.to(torch.float16)
+    y_indices, _ = torch.meshgrid(
+        torch.arange(H, device="cuda"), torch.arange(W, device="cuda"), indexing="ij"
+    )
+    total_mass = binary_mask.sum()
+
+    if total_mass == 0:
+        return cur_mask
+
+    com_y = (binary_mask * y_indices).sum() / total_mass
+    com_y = int(com_y.item())
+
+    modified_mask = mask.clone() 
+    modified_mask[:com_y, :] = 1
+    return modified_mask.unsqueeze(0).unsqueeze(0)
+
+
 
 def disrupt(
     cur_mask: torch.Tensor,
@@ -393,26 +401,26 @@ def disrupt(
   x_dim = len(X.shape) - 1
   gen = torch.Generator(device='cuda')
   gen.manual_seed(1003)
-  mask = maskGenerator(cur_mask)
-  count = -1
+  mask = cur_mask
+  mask_test = mask.cpu().detach().numpy()[0][0]
+  im = Image.fromarray((mask_test * 255).astype(np.uint8))
+  im.save(f'mask_test/masktest_half.png')
+  count = 0
   for j in iterator:
     
     random_t = get_random_t(t_schedule, t_schedule_bound)
     all_grads = []
     value_losses = []
     text_embed = get_random_emb(text_embeddings)
-    if j % 50 == 0 and j>=50:
-      if j==200:
-        mask = cur_mask
-      else:
-        mask = maskGenerator(cur_mask)
-      mask_test = mask.cpu().detach().numpy()[0][0]
-      im = Image.fromarray((mask_test * 255).astype(np.uint8))
-      im.save(f'mask_test/masktest_{j}.png')
+    # if j == 125:
+    #   mask = maskGenerator(cur_mask)
+    #   mask_test = mask.cpu().detach().numpy()[0][0]
+    #   im = Image.fromarray((mask_test * 255).astype(np.uint8))
+    #   im.save(f'mask_test/masktest_full.png')
     
     for _ in range(grad_reps):
-      count += 1
       quality = count % 80 + 20
+      count += 1
       if diffjpeg:
         c_grad, loss_value = get_grad_diffjpeg(
             cur_mask=mask,

@@ -576,13 +576,13 @@ for testimg_filename in filenames:
         fig.tight_layout()
               
         if test==1:
-            os.makedirs(f"./{testimg_filename}/original", exist_ok=True)
-            image_adv.save(f"./{testimg_filename}/original/prompt{promptnum}.png")
-            plt.savefig(f'./{testimg_filename}/original/result_prompt{promptnum}.png')
+            os.makedirs(f"./{testimg_filename}/ddd_fast", exist_ok=True)
+            image_adv.save(f"./{testimg_filename}/ddd_fast/prompt{promptnum}.png")
+            plt.savefig(f'./{testimg_filename}/ddd_fast/result_prompt{promptnum}.png')
         elif test==2:
-            os.makedirs(f"./{testimg_filename}/original_compressed", exist_ok=True)
-            image_adv.save(f"./{testimg_filename}/original_compressed/prompt{promptnum}.png")
-            plt.savefig(f'./{testimg_filename}/original_compressed/result_prompt{promptnum}.png')
+            os.makedirs(f"./{testimg_filename}/ddd_fast_compressed", exist_ok=True)
+            image_adv.save(f"./{testimg_filename}/ddd_fast_compressed/prompt{promptnum}.png")
+            plt.savefig(f'./{testimg_filename}/ddd_fast_compressed/result_prompt{promptnum}.png')
         elif test==3:
             os.makedirs(f"./{testimg_filename}/diffjpeg", exist_ok=True)
             image_adv.save(f"./{testimg_filename}/diffjpeg/prompt{promptnum}.png")
