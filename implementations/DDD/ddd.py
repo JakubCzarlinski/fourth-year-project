@@ -16,7 +16,7 @@ from torchmetrics.image.ssim import StructuralSimilarityIndexMeasure as SSIM
 from torchvision import transforms
 from tqdm import tqdm
 import torch_dct as dct
-
+import random
 to_pil = transforms.ToPILImage()
 from diff_jpeg import DiffJPEGCoding
 diff_jpeg_coding_module = DiffJPEGCoding()
@@ -296,7 +296,7 @@ def get_grad_diffjpeg(
     loss_depth: list,
     loss_mask: bool,
     random_t: torch.Tensor,
-    grad_reps = 4
+    quality = 4
 ):
   torch.set_grad_enabled(True)
   # cur_mask = cur_mask.clone()
@@ -308,7 +308,7 @@ def get_grad_diffjpeg(
   cur_mask.grad = None
   cur_masked_image.grad = None
 
-  jpeg_quality = torch.tensor([(grad_reps+1)*14]).to("cuda")
+  jpeg_quality = torch.tensor([quality]).to("cuda")
   compressed_image = cur_masked_image.clone()
   compressed_image = (compressed_image / 2 + 0.5).clamp(0, 1) * 255
   compressed_image = diff_jpeg_coding_module(image_rgb=compressed_image, jpeg_quality=jpeg_quality).to("cuda")
@@ -344,6 +344,25 @@ def get_random_emb(embs):
   rand_pos = np.random.randint(0, len(embs))
   return embs[rand_pos]
 
+def maskGenerator(cur_mask):
+    box_shape = (cur_mask.shape[2] // 4, cur_mask.shape[3] // 4)
+    overlap = 0
+    while overlap < box_shape[0]*box_shape[1]//4:
+      rtl = (random.randint(0, cur_mask.shape[2]-box_shape[0]), random.randint(0, cur_mask.shape[3]-box_shape[1]))
+      random_quarter = torch.ones_like(cur_mask)
+      random_quarter[:, :, rtl[0]:rtl[0]+box_shape[0], rtl[1]:rtl[1]+box_shape[1]] = 0
+
+        
+      overlap_mask = (random_quarter+cur_mask).clamp(0, 1)
+      overlap = (cur_mask.shape[2] * cur_mask.shape[3]) - overlap_mask.to(torch.float64).sum().item()
+    
+
+    # print(type(random_quarter))
+    # print(random_quarter.shape)
+    # print(random_quarter[0][0].min())
+    # print(random_quarter[0][0].max())
+
+    return overlap_mask.to(torch.float16)
 
 def disrupt(
     cur_mask: torch.Tensor,
@@ -374,18 +393,29 @@ def disrupt(
   x_dim = len(X.shape) - 1
   gen = torch.Generator(device='cuda')
   gen.manual_seed(1003)
-
+  mask = maskGenerator(cur_mask)
+  count = -1
   for j in iterator:
+    
     random_t = get_random_t(t_schedule, t_schedule_bound)
     all_grads = []
     value_losses = []
     text_embed = get_random_emb(text_embeddings)
-
-    for greps in range(grad_reps):
+    if j % 50 == 0 and j>=50:
+      if j==200:
+        mask = cur_mask
+      else:
+        mask = maskGenerator(cur_mask)
+      mask_test = mask.cpu().detach().numpy()[0][0]
+      im = Image.fromarray((mask_test * 255).astype(np.uint8))
+      im.save(f'mask_test/masktest_{j}.png')
+    
+    for _ in range(grad_reps):
+      count += 1
+      quality = count % 80 + 20
       if diffjpeg:
-        # Run twice on different cur_mask and cur_masked_image
         c_grad, loss_value = get_grad_diffjpeg(
-            cur_mask=cur_mask,
+            cur_mask=mask,
             cur_masked_image=X_adv,
             text_embeddings=text_embed,
             pipe=pipe,
@@ -393,7 +423,7 @@ def disrupt(
             loss_depth=loss_depth,
             loss_mask=loss_mask,
             random_t=random_t,
-            grad_reps = greps
+            quality = quality
         )
       else:
           c_grad, loss_value = get_grad_original(

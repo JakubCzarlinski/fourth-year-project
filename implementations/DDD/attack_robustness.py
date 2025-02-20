@@ -522,7 +522,7 @@ for testimg_filename in filenames:
     SEED = 1007
 
     with torch.no_grad():
-      for prompt in prompts:
+      for promptnum, prompt in enumerate(prompts):
 
         print(SEED)
         torch.manual_seed(SEED)
@@ -577,19 +577,19 @@ for testimg_filename in filenames:
               
         if test==1:
             os.makedirs(f"./{testimg_filename}/original", exist_ok=True)
-            image_adv.save(f"./{testimg_filename}/original/{prompt}.png")
-            plt.savefig(f'./{testimg_filename}/original/result_{prompt}.png')
+            image_adv.save(f"./{testimg_filename}/original/prompt{promptnum}.png")
+            plt.savefig(f'./{testimg_filename}/original/result_prompt{promptnum}.png')
         elif test==2:
             os.makedirs(f"./{testimg_filename}/original_compressed", exist_ok=True)
-            image_adv.save(f"./{testimg_filename}/original_compressed/{prompt}.png")
-            plt.savefig(f'./{testimg_filename}/original_compressed/result_{prompt}.png')
+            image_adv.save(f"./{testimg_filename}/original_compressed/prompt{promptnum}.png")
+            plt.savefig(f'./{testimg_filename}/original_compressed/result_prompt{promptnum}.png')
         elif test==3:
             os.makedirs(f"./{testimg_filename}/diffjpeg", exist_ok=True)
-            image_adv.save(f"./{testimg_filename}/diffjpeg/{prompt}.png")
-            plt.savefig(f'./{testimg_filename}/diffjpeg/result_{prompt}.png')
+            image_adv.save(f"./{testimg_filename}/diffjpeg/prompt{promptnum}.png")
+            plt.savefig(f'./{testimg_filename}/diffjpeg/result_prompt{promptnum}.png')
         elif test==4:
             os.makedirs(f"./{testimg_filename}/diffjpeg_compressed", exist_ok=True)
-            image_adv.save(f"./{testimg_filename}/diffjpeg_compressed/{prompt}.png")
-            plt.savefig(f'./{testimg_filename}/diffjpeg_compressed/result_{prompt}.png')
+            image_adv.save(f"./{testimg_filename}/diffjpeg_compressed/prompt{promptnum}.png")
+            plt.savefig(f'./{testimg_filename}/diffjpeg_compressed/result_prompt{promptnum}.png')
 
         plt.clf()
