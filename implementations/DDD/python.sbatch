@@ -15,8 +15,12 @@
 source /etc/profile.d/modules.sh
 source /etc/profile.d/conda.sh
 
+rm -rf mask_test
+mkdir mask_test
+rm output.txt
+
 ## Execute your program(s) ##
 module load CUDA
 conda activate group
 # python3 attack_robustness.py "original"
-python3 attack_robustness.py "diffjpeg"
+python3 attack_robustness.py "diffjpeg" >> output.txt

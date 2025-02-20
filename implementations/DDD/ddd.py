@@ -418,12 +418,25 @@ def disrupt(
     #   im = Image.fromarray((mask_test * 255).astype(np.uint8))
     #   im.save(f'mask_test/masktest_full.png')
     
-    for _ in range(grad_reps):
+    for g in range(grad_reps):
       quality = count % 80 + 20
       count += 1
       if diffjpeg:
-        c_grad, loss_value = get_grad_diffjpeg(
-            cur_mask=mask,
+        if g%2==0:
+          c_grad, loss_value = get_grad_diffjpeg(
+              cur_mask=mask,
+              cur_masked_image=X_adv,
+              text_embeddings=text_embed,
+              pipe=pipe,
+              attn_controller=attn_controller,
+              loss_depth=loss_depth,
+              loss_mask=loss_mask,
+              random_t=random_t,
+              quality = quality
+          )
+        else:
+          c_grad, loss_value = get_grad_original(
+            cur_mask=cur_mask,
             cur_masked_image=X_adv,
             text_embeddings=text_embed,
             pipe=pipe,
@@ -431,8 +444,8 @@ def disrupt(
             loss_depth=loss_depth,
             loss_mask=loss_mask,
             random_t=random_t,
-            quality = quality
-        )
+          )
+
       else:
           c_grad, loss_value = get_grad_original(
             cur_mask=cur_mask,
@@ -443,7 +456,7 @@ def disrupt(
             loss_depth=loss_depth,
             loss_mask=loss_mask,
             random_t=random_t,
-        )
+          )
 
       all_grads.append(c_grad.detach())
       value_losses.append(loss_value)
