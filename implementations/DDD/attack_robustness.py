@@ -70,7 +70,7 @@ dtype = torch.float16
 
 model_version = "stabilityai/stable-diffusion-2-inpainting"
 
-filenames = ["011"]
+filenames = ["001", "002", "003", "004", "005", "006", "007", "008", "011"]
 
 for testimg_filename in filenames:
   nf4_config = BitsAndBytesConfig(
