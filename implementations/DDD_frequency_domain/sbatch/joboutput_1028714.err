@@ -1,21 +1,0 @@
-Loading pipeline components...:   0%|          | 0/6 [00:00<?, ?it/s]Loading pipeline components...:  67%|██████▋   | 4/6 [00:00<00:00, 11.23it/s]Loading pipeline components...: 100%|██████████| 6/6 [00:00<00:00, 16.36it/s]
-  0%|          | 0/250 [00:00<?, ?it/s]/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py:231: UserWarning: ComplexHalf support is experimental and many operators don't support it yet. (Triggered internally at ../aten/src/ATen/EmptyTensor.cpp:46.)
-  latents_fft = torch.fft.fft2(latents)
-  0%|          | 0/250 [00:00<?, ?it/s]
-Traceback (most recent call last):
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/attack.py", line 415, in <module>
-    result, total_losses = ddd.disrupt(
-                           ^^^^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 400, in disrupt
-    c_grad, loss_value = get_grad(
-                         ^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 299, in get_grad
-    _image_nat, _latents = attack_forward(
-                           ^^^^^^^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 224, in attack_forward
-    latents = add_dft_noise(self, latents, text_embeddings, t, guidance_scale, mask, masked_image_latents)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 239, in add_dft_noise
-    masked_image_latents=dct.dct_2d(latents)(masked_image_latents),  
-                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'Tensor' object is not callable

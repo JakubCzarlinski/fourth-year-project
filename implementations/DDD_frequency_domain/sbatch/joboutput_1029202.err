@@ -1,50 +1,0 @@
-Loading pipeline components...:   0%|          | 0/6 [00:00<?, ?it/s]Loading pipeline components...:  50%|█████     | 3/6 [00:00<00:00, 12.99it/s]Loading pipeline components...: 100%|██████████| 6/6 [00:00<00:00, 22.56it/s]
-  0%|          | 0/250 [00:00<?, ?it/s]/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py:231: UserWarning: ComplexHalf support is experimental and many operators don't support it yet. (Triggered internally at ../aten/src/ATen/EmptyTensor.cpp:46.)
-  latents_fft = torch.fft.fftshift(torch.fft.fft2(latents)) #dct.dct_2d(latents)
-/dcs/21/u2102915/.conda/envs/group/lib/python3.12/site-packages/bitsandbytes/nn/modules.py:480: UserWarning: Casting complex values to real discards the imaginary part (Triggered internally at ../aten/src/ATen/native/Copy.cpp:308.)
-  x = x.to(self.compute_dtype)
-  0%|          | 0/250 [00:00<?, ?it/s]
-Traceback (most recent call last):
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/attack.py", line 415, in <module>
-    result, total_losses = ddd.disrupt(
-                           ^^^^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 401, in disrupt
-    c_grad, loss_value = get_grad(
-                         ^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 300, in get_grad
-    _image_nat, _latents = attack_forward(
-                           ^^^^^^^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 224, in attack_forward
-    latents = add_dft_noise(self, latents, text_embeddings, t, guidance_scale, mask, masked_image_latents)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 236, in add_dft_noise
-    noise_pred_freq = pred_noise(
-                      ^^^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 268, in pred_noise
-    noise_pred = unet.forward(
-                 ^^^^^^^^^^^^^
-  File "/dcs/21/u2102915/.conda/envs/group/lib/python3.12/site-packages/diffusers/models/unets/unet_2d_condition.py", line 1143, in forward
-    emb = self.time_embedding(t_emb, timestep_cond)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102915/.conda/envs/group/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102915/.conda/envs/group/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102915/.conda/envs/group/lib/python3.12/site-packages/diffusers/models/embeddings.py", line 1307, in forward
-    sample = self.act(sample)
-             ^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102915/.conda/envs/group/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102915/.conda/envs/group/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102915/.conda/envs/group/lib/python3.12/site-packages/torch/nn/modules/activation.py", line 432, in forward
-    return F.silu(input, inplace=self.inplace)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102915/.conda/envs/group/lib/python3.12/site-packages/torch/nn/functional.py", line 2380, in silu
-    return torch._C._nn.silu(input)
-           ^^^^^^^^^^^^^^^^^^^^^^^^
-RuntimeError: "silu_cuda" not implemented for 'ComplexHalf'
