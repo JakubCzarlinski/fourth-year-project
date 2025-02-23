@@ -1,0 +1,11 @@
+20 to 100 in increments of 1 per iter and grad rep, boosted outcome on 011, about the same on 008 not yet tested on others
+randomised with seed gave good results for some, but very bad on others - if there was a way to adapt the compression randomisation to an image this could be strong
+increments of 1/3 over 300 iters had worse performance
+increments of 5 proved to be worse than increments of 1
+gradual decrement from 99 to 9 gave very bad results
+1-100 improves some but makes others worse - good results on 008, 004 but much worse on 011, 001
+increments of 1 per iter but the *14 split over grad reps initially promising but seems to lose out on loss after iter 295, reducing the iters to 295 does not seem to help
+attempted changing loss function, MSSIM not viable due to VRAM constraints and SSIM not working yet, L1 not much better but cosine similarity with the +1 per rep and iter seems promising - worse in some cases(mona lisa and obama) but better overall.
+cos with temp and normalisation may or may not be better its hard to tell
+combined approach with cos and mse did not seem effective on a small test.
+cos with fixed vals on grad reps but 20 reps total

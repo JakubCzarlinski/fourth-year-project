@@ -74,7 +74,10 @@ dtype = torch.float16
 
 model_version = "stabilityai/stable-diffusion-2-inpainting"
 
-filenames = ["008"]
+# filenames = ["001","002", "003", "004", "005", "006", "007", "008", "011"]
+# filenames = ["001", "004", "006", "008", "011"]
+# filenames = ["001", "006", "011"]
+filenames = ["21", "22", "24", "25", "28"]
 
 for testimg_filename in filenames:
   nf4_config = BitsAndBytesConfig(
@@ -308,6 +311,7 @@ for testimg_filename in filenames:
   cur_mask = cur_mask.to(device=device, dtype=dtype)
   cur_masked_image = cur_masked_image.to(device=device, dtype=dtype)
 
+  """maybe change loss criteria"""
   val_loss_criteria = "MSE"
   attn_controller = ddd.AttnController(
       post=False,
@@ -409,10 +413,10 @@ for testimg_filename in filenames:
   infer_dict["inter_print"] = []
 
   # iters = 100
-  iters = 300
+  iters = 299
   grad_reps = 7
-  loss_mask = True
-  eps = 12
+  loss_mask = False
+  eps = 13
   step_size = 3
   pixel_loss = 0
   # val_loss_criteria = "MSE"

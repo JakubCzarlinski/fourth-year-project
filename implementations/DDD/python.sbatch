@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #SBATCH --job-name=ddd-python # Job name for tracking
-#SBATCH --partition=eagle     # Partition you wish to use (see above for list)
+#SBATCH --partition=falcon,gecko,eagle     # Partition you wish to use (see above for list)
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=6     # Number of CPU threads used by your job
 #SBATCH --gres=gpu:1           # Number of GPUs to use 
@@ -17,5 +17,5 @@ source /etc/profile.d/conda.sh
 ## Execute your program(s) ##
 module load CUDA
 conda activate DDDD
-# python3 attack_robustness.py "original"
+python3 attack_robustness.py "original"
 python3 attack_robustness.py "diffjpeg"

@@ -47,6 +47,9 @@ class AttnController:
     self.m_name = []
     self.criteria_name = criteria
     self.target_depth = target_depth
+    # for cosine similarity
+    self.temp = 0.1
+    self.weight = 0.2
 
     if criteria == 'MSE':
       self.criteria = nn.MSELoss()
@@ -57,11 +60,13 @@ class AttnController:
     elif criteria == 'L1':
       self.criteria = nn.L1Loss()
     elif criteria == 'SSIM':
-      raise NotImplementedError("SSIM is not implemented")
-      # ssim = SSIM().to("cuda")
-      # self.criteria = lambda x, y: ssim(x.unsqueeze(0), y.unsqueeze(0))
+      ssim = SSIM().to("cuda")
+      self.criteria = lambda x, y: ssim(x.unsqueeze(0), y.unsqueeze(0))
     elif criteria == 'MSSIM':
-      self.criteria = MSSIM()
+      self.criteria = MSSIM().to("cuda")
+    elif criteria == 'COMBINED':
+      cos_sim = nn.CosineSimilarity(dim=-1, eps=0.00001)
+      self.criteria = lambda x, y: (1 - cos_sim.forward(x, y)).mean()/self.temp
     self.switch = switch
     self.target_hidden = None
 
@@ -74,7 +79,7 @@ class AttnController:
       )
       new_mask = new_mask.flatten().unsqueeze(0).unsqueeze(2)
 
-      if self.criteria_name == 'COS':
+      if self.criteria_name == 'COS' or self.criteria_name == 'COMBINED':
         new_mask[new_mask == 0] = 0.01
 
       self.masks[hidden_shape] = new_mask
@@ -112,7 +117,26 @@ class AttnController:
         a = a * self.masks[h]
         b = b * self.masks[h]
       if h in loss_depth:
-        loss = -self.criteria(a.detach(), b)
+        h_sqrt = int(np.sqrt(h))
+        a_4d = a.view(-1, 1, h_sqrt, h_sqrt)
+        b_4d = b.view(-1, 1, h_sqrt, h_sqrt)
+        if self.criteria_name == 'SSIM':
+          loss = -self.criteria(a_4d, b_4d)
+        elif self.criteria_name == 'MSSIM':
+          loss = -self.criteria(a_4d, b_4d)
+        elif self.criteria_name == 'COS':
+          # L2 norm for stability
+          a_norm = torch.nn.functional.normalize(a, p=2, dim=-1)
+          b_norm = torch.nn.functional.normalize(b, p=2, dim=-1)
+          loss = -self.criteria(a_norm, b_norm)/self.temp
+        elif self.criteria_name == 'COMBINED':
+          a_norm = torch.nn.functional.normalize(a, p=2, dim=-1)
+          b_norm = torch.nn.functional.normalize(b, p=2, dim=-1)
+          loss = -self.criteria(a_norm, b_norm) * (1 - self.weight)
+          mse = nn.MSELoss()
+          loss += -mse(a.detach(), b) * self.weight
+        else:
+          loss = -self.criteria(a.detach(), b)*self.weight
         losses += loss
 
       cur_loss += loss
@@ -311,6 +335,7 @@ def get_grad_diffjpeg(
   cur_mask.grad = None
   cur_masked_image.grad = None
 
+  # jpeg_quality = torch.tensor([(grad_reps*5)% 99 + 5]).to("cuda")
   jpeg_quality = torch.tensor([grad_reps]).to("cuda")
   compressed_image = cur_masked_image.clone()
   compressed_image = (compressed_image / 2 + 0.5).clamp(0, 1) * 255
@@ -377,7 +402,10 @@ def disrupt(
   x_dim = len(X.shape) - 1
   gen = torch.Generator(device='cuda')
   gen.manual_seed(1003)
+  
   count = 0
+  # np.random.seed(2)
+  # qualities = np.random.randint(1, 100, len(iterator)*grad_reps)
 
   for j in iterator:
     random_t = get_random_t(t_schedule, t_schedule_bound)
@@ -387,12 +415,18 @@ def disrupt(
 
     # The set JPEG quality for this iteration running between 20 and 100
     # quality = j % 80 + 20
+    if j % 3 == 0:
+      count += 1  
     
     for greps in range(grad_reps):
       if diffjpeg:
-        """change to only update every 3 iters"""
-        quality = count % 80 + 20 
-        count += 1
+        """change to only update every 3 iters
+        also try additive per iteration but normally distributed around the val for the grad_reps"""
+        quality = count % 80 + greps*2
+        if quality == 0:
+          quality = 1
+        # quality = qualities[count]
+        # print(quality)
         # Run twice on different cur_mask and cur_masked_image
         c_grad, loss_value = get_grad_diffjpeg(
             cur_mask=cur_mask,
