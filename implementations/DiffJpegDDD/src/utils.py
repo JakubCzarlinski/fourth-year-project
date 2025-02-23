@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from PIL import Image, ImageOps
 from torchvision import transforms as tfms
+from torchvision import transforms
 from torchvision.utils import make_grid
 from torchvision.utils import save_image
 import torch.nn.functional as F
@@ -18,8 +19,18 @@ def prepare_masks(orig_images, mask_image):
     return cur_mask.to(device, dtype), cur_masked_image.to(device, dtype)
 
 def process_images(pipe_inpaint, orig_images, cur_mask, cur_masked_image, size):
+    preprocess_transform = transforms.Compose(
+        [
+            transforms.Resize(
+                size,
+                interpolation=transforms.InterpolationMode.BILINEAR,
+            ),
+            transforms.CenterCrop(size),
+            transforms.ToTensor(),
+        ]
+    )
     with torch.no_grad():
-        curr_images = preprocess(orig_images).to(device)
+        curr_images = preprocess_transform(orig_images).to(device)
         mask = F.interpolate(cur_mask, size=(size // 8, size // 8))
         
         if len(curr_images.shape) == 3:

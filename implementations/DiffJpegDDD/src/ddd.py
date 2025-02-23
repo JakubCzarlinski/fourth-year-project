@@ -319,6 +319,8 @@ def disrupt(
     iterator = tqdm(range(iters))
     total_losses = []
     x_dim = len(X.shape) - 1
+    gen = torch.Generator(device='cuda')
+    gen.manual_seed(1003)
     count = 0
 
     for j in iterator:

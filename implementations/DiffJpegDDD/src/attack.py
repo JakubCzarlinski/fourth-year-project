@@ -1,13 +1,19 @@
 from sd import StableDiffusionInpaint, Inference
 from torchvision import transforms
-from PIL import Image
-from utils import prepare_masks, get_embeddings, process_images, load_images, text_embedding, pil_to_latent, recover_image, prepare_mask_and_masked
+import torchvision
+from PIL import Image, ImageOps
+from utils import prepare_masks, get_embeddings, process_images, load_images, text_embedding, pil_to_latent, recover_image, prepare_mask_and_masked, load_prompt
 from text_optimising import TextOptimizer, SemanticCentroids
 from ddd import disrupt
 import torch
 import argparse
 import sys
 import os
+import matplotlib.pyplot as plt
+from diff_jpeg import DiffJPEGCoding
+from diffusers import StableDiffusionInpaintPipeline
+model_version = "stabilityai/stable-diffusion-2-inpainting"
+diff_jpeg_coding_module = DiffJPEGCoding()
 
 torch.backends.cuda.matmul.allow_tf32 = True
 to_pil = transforms.ToPILImage()
@@ -39,7 +45,7 @@ ddd_args = {
     "image_size": 512,
     "image_size_2d": (512, 512),
     "image_folder": "./test_images/",
-    "image_filenames":[ "011"],
+    "image_filenames":["011"],
     "strength": 0.7,
     "guidance_scale": 7.5,
     "num_inference_steps": 4
@@ -67,22 +73,10 @@ for filename in ddd_args["image_filenames"]:
     tokenizer = pipe_inpaint.tokenizer
     token_embedding = pipe_inpaint.text_encoder.text_model.embeddings.token_embedding
 
-    preprocess = transforms.Compose(
-        [
-            transforms.Resize(
-                ddd_args["image_size"],
-                interpolation=transforms.InterpolationMode.BILINEAR,
-            ),
-            transforms.CenterCrop(ddd_args["image_size"]),
-            transforms.ToTensor(),
-        ]
-    )
-
     # Load masked and original images.
     original_image, masked_image_original, masked_image = load_images(ddd_args['image_folder'], filename, ddd_args["image_size_2d"])
 
     # Load token embeddings
-    # processor = ImageProcessor(pipe_inpaint, device, dtype, ddd_args["image_size"])
     current_mask, current_masked_image = prepare_masks(original_image, masked_image)
     all_latents, masked_image_latents, mask = process_images(pipe_inpaint, original_image, current_mask, current_masked_image, ddd_args["image_size"])
     gt_embeddings, uncond_embeddings = get_embeddings(pipe_inpaint, filename)
@@ -94,8 +88,8 @@ for filename in ddd_args["image_filenames"]:
     input_text_embedding = text_embeddings.detach()
     input_text_embeddings = torch.cat([input_text_embedding] * 2)
 
-    current_mask = current_mask.to(dtype=dtype, device=device)
-    current_masked_image = current_masked_image.to(dtype=dtype, device=device)
+    # current_mask = current_mask.to(dtype=dtype, device=device)
+    # current_masked_image = current_masked_image.to(dtype=dtype, device=device)
 
     target_prompt = ""
     SEED = 786349
@@ -119,8 +113,6 @@ for filename in ddd_args["image_filenames"]:
 
 
     # Using Monte Carlo Sampling to construct Semantic Centroids
-    SEED = 786349
-    torch.manual_seed(SEED)
     t_schedule = [720]
     t_schedule_bound = 10
     n_samples = 50
@@ -128,6 +120,11 @@ for filename in ddd_args["image_filenames"]:
     SEED = 786349
     torch.manual_seed(SEED)
 
+    current_mask, current_masked_image = prepare_mask_and_masked(
+        original_image, masked_image
+    )
+    current_mask = current_mask.to(dtype=dtype, device=device)
+    current_masked_image = current_masked_image.to(dtype=dtype, device=device)
 
     processor = SemanticCentroids(pipe_inpaint, device, dtype, ddd_args["image_size"], ddd_args["num_inference_steps"], input_text_embeddings)
     attn_controller = processor.get_attention(current_mask, "MSE", loss_depth)
@@ -146,7 +143,7 @@ for filename in ddd_args["image_filenames"]:
     grad_reps = 7
     loss_mask = True
     eps = 12
-    step_size = 3
+    step_size = 3.0
     pixel_loss = 0
 
     result, total_losses = disrupt(
@@ -169,7 +166,7 @@ for filename in ddd_args["image_filenames"]:
     )
 
     # Get Protected Image
-    adv_X = (result[0] / 2 + 0.5)#.clamp(0, 1)
+    adv_X = (result[0] / 2 + 0.5).clamp(0, 1)
     adv_image = to_pil(adv_X.to(torch.float32)).convert("RGB")
     adv_image = recover_image(
         adv_image, original_image, masked_image, background=True
@@ -183,4 +180,3 @@ for filename in ddd_args["image_filenames"]:
     # Inpainting Generation
     inference = Inference(filename, "stabilityai/stable-diffusion-2-inpainting", models_path, diffjpeg=True)
     inference.infer_images()
-    

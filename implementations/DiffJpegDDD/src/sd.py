@@ -86,7 +86,7 @@ class Inference:
         pipe = StableDiffusionInpaintPipeline.from_pretrained(
             model_version,
             variant="fp16",
-            torch_dtype=torch.float32,
+            torch_dtype=torch.float16,
             use_safetensors=True,
             cache_dir=models_path,
         )
@@ -132,16 +132,16 @@ class Inference:
         for test in self.test_cases:
             init_image, mask_image, adv_image = self.load_images(test)
             torch.manual_seed(self.seed)
+            with torch.no_grad():
+                for promptnum, prompt in enumerate(prompts):
+                    print(self.seed)
+                    torch.manual_seed(self.seed)
+                    strength, guidance_scale, num_inference_steps = 0.8, 7.5, 50
 
-            for promptnum, prompt in enumerate(prompts):
-                print(self.seed)
-                torch.manual_seed(self.seed)
-                strength, guidance_scale, num_inference_steps = 0.8, 7.5, 50
-
-                image_nat = self.generate_inpainted_image(init_image, init_image, mask_image, prompt, strength, guidance_scale, num_inference_steps)
-                torch.manual_seed(self.seed)
-                image_adv = self.generate_inpainted_image(init_image, adv_image, mask_image, prompt, strength, guidance_scale, num_inference_steps)
-                self.store_generated_images(test, promptnum, init_image, adv_image, image_nat, image_adv, prompt)
+                    image_nat = self.generate_inpainted_image(init_image, init_image, mask_image, prompt, strength, guidance_scale, num_inference_steps)
+                    torch.manual_seed(self.seed)
+                    image_adv = self.generate_inpainted_image(init_image, adv_image, mask_image, prompt, strength, guidance_scale, num_inference_steps)
+                    self.store_generated_images(test, promptnum, init_image, adv_image, image_nat, image_adv, prompt)
 
     def generate_inpainted_image(self, init_image, image, mask_image, prompt, strength, guidance_scale, num_inference_steps):
         return recover_image(self.pipe_inpaint(
