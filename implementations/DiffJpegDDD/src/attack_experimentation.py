@@ -18,6 +18,9 @@ diff_jpeg_coding_module = DiffJPEGCoding()
 torch.backends.cuda.matmul.allow_tf32 = True
 to_pil = transforms.ToPILImage()
 
+experiment_name = "refactor"
+experiment_explanation = " This is just a test"
+
 def dict_to_args_parser():
   args_dict = {
     "prompt_len": 16,
@@ -156,19 +159,23 @@ for filename in ddd_args["image_filenames"]:
         grad_reps=ddd_args["grad_reps"],
         diffjpeg=diffjpeg
     )
-
+    experiment_filename = f"./Images/{experiment_name}/{filename}"
     # Get Protected Image
     adv_X = (result[0] / 2 + 0.5).clamp(0, 1)
     adv_image = to_pil(adv_X.to(torch.float32)).convert("RGB")
     adv_image = recover_image(
         adv_image, original_image, masked_image, background=True
     )
-    os.makedirs(f"./{filename}", exist_ok=True)
+    os.makedirs(experiment_filename, exist_ok=True)
     if diffjpeg:
-       adv_image.save(f'./{filename}/diffjpeg_adversarial.png')
+       adv_image.save(f'{experiment_filename}/diffjpeg_adversarial.png')
     else:
-       adv_image.save(f'./{filename}/original_adversarial.png')
+       adv_image.save(f'{experiment_filename}/original_adversarial.png')
 
     # Inpainting Generation
-    inference = Inference(filename, model_version, models_path, diffjpeg=True)
+    inference = Inference(experiment_filename, filename, model_version, models_path, diffjpeg=True)
     inference.infer_images()
+
+with open(f"./Images/{experiment_name}/explanation.txt", "w") as file:
+   file.write(experiment_explanation)
+

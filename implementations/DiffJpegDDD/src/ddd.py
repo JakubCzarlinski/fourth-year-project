@@ -328,11 +328,21 @@ def disrupt(
         all_grads, value_losses = [], []
         text_embed = get_random_emb(text_embeddings)
         
+        
         for _ in range(grad_reps):
             quality = count % 80 + 20
             count += 1
             c_grad, loss_value = get_gradient(
-                cur_mask, X_adv, text_embed, pipe, attn_controller, loss_depth, loss_mask, random_t, quality, diffjpeg
+                cur_mask, 
+                X_adv, 
+                text_embed, 
+                pipe, 
+                attn_controller, 
+                loss_depth, 
+                loss_mask, 
+                random_t, 
+                quality, 
+                diffjpeg
             )
             all_grads.append(c_grad.detach())
             value_losses.append(loss_value)

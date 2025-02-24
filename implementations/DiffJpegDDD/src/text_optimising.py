@@ -28,19 +28,6 @@ class TextOptimizer:
         self.best_loss = -999
         self.best_text = ""
         self.best_embeds = None
-    
-    def optimize(self):
-        for step in range(self.args.opt_iters):
-            self._update_learning_rate(step)
-            tmp_embeds = self._prepare_embeddings(step)
-            padded_embeds, padded_dummy_ids = self._prepare_padded_embeddings(tmp_embeds)
-            latents = self._select_latents()
-            loss = self._compute_loss(latents, padded_embeds, padded_dummy_ids)
-            
-            self.prompt_embeds.grad, = torch.autograd.grad(loss, [tmp_embeds])
-            self.input_optimizer.step()
-            self.input_optimizer.zero_grad()
-        return self.text_embeddings
             
     def _update_learning_rate(self, step):
         if step > self.args.opt_iters - 10:
@@ -104,6 +91,19 @@ class TextOptimizer:
         else:
             raise ValueError(f"Unknown prediction type {self.pipe_inpaint.scheduler.config.prediction_type}")
 
+    def optimize(self):
+        for step in range(self.args.opt_iters):
+            self._update_learning_rate(step)
+            tmp_embeds = self._prepare_embeddings(step)
+            padded_embeds, padded_dummy_ids = self._prepare_padded_embeddings(tmp_embeds)
+            latents = self._select_latents()
+            loss = self._compute_loss(latents, padded_embeds, padded_dummy_ids)
+            
+            self.prompt_embeds.grad, = torch.autograd.grad(loss, [tmp_embeds])
+            self.input_optimizer.step()
+            self.input_optimizer.zero_grad()
+        return self.text_embeddings
+
 
 class SemanticCentroids:
     def __init__(self, pipe_inpaint, device, dtype, size, num_inference_steps, input_text_embeddings):
@@ -113,6 +113,27 @@ class SemanticCentroids:
       self.size = size
       self.num_inference_steps = num_inference_steps
       self.input_text_embeddings = input_text_embeddings
+
+    def _initialise_latents(self, mask, masked_image):
+        num_channels_latents = self.pipe_inpaint.vae.config.latent_channels
+        latents_shape = (1, num_channels_latents, self.size // 8, self.size // 8)
+        latents = torch.randn(latents_shape, device=self.device, dtype=self.input_text_embeddings.dtype)
+        
+        mask = torch.nn.functional.interpolate(mask, size=(self.size // 8, self.size // 8))
+        mask = torch.cat([mask] * 2)
+        masked_image_latents = self.pipe_inpaint.vae.encode(masked_image
+                                                    ).latent_dist.sample()
+        masked_image_latents = 0.18215 * masked_image_latents
+        masked_image_latents = torch.cat([masked_image_latents] * 2)
+
+        
+        return latents, mask, masked_image_latents
+    
+    def _compute_mean(self, results, n_samples, attncontroller):
+        means = [sum([results[idx][feature] for idx in range(n_samples)]) / n_samples for feature in range(len(results[0]))]
+        attncontroller.target_hidden = means
+        del results, means
+        return [self.input_text_embeddings]
 
     def get_attention(self, cur_mask, loss_criteria, loss_depth):
         return AttnController(
@@ -162,24 +183,3 @@ class SemanticCentroids:
                 results.append(attncontroller.targets)
                 attncontroller.zero_attn_probs()
         return self._compute_mean(results, n_samples, attncontroller)
-
-    def _initialise_latents(self, mask, masked_image):
-        num_channels_latents = self.pipe_inpaint.vae.config.latent_channels
-        latents_shape = (1, num_channels_latents, self.size // 8, self.size // 8)
-        latents = torch.randn(latents_shape, device=self.device, dtype=self.input_text_embeddings.dtype)
-        
-        mask = torch.nn.functional.interpolate(mask, size=(self.size // 8, self.size // 8))
-        mask = torch.cat([mask] * 2)
-        masked_image_latents = self.pipe_inpaint.vae.encode(masked_image
-                                                    ).latent_dist.sample()
-        masked_image_latents = 0.18215 * masked_image_latents
-        masked_image_latents = torch.cat([masked_image_latents] * 2)
-
-        
-        return latents, mask, masked_image_latents
-    
-    def _compute_mean(self, results, n_samples, attncontroller):
-        means = [sum([results[idx][feature] for idx in range(n_samples)]) / n_samples for feature in range(len(results[0]))]
-        attncontroller.target_hidden = means
-        del results, means
-        return [self.input_text_embeddings]
