@@ -15,7 +15,6 @@ from torchmetrics.image.ssim import (
 from torchmetrics.image.ssim import StructuralSimilarityIndexMeasure as SSIM
 from torchvision import transforms
 from tqdm import tqdm
-import torch_dct as dct
 import random
 to_pil = transforms.ToPILImage()
 from diff_jpeg import DiffJPEGCoding
@@ -44,12 +43,13 @@ class AttnController:
     self.m_name = []
     self.criteria_name = criteria
     self.target_depth = target_depth
+    self.temp = 0.1
 
     if criteria == 'MSE':
       self.criteria = nn.MSELoss()
     elif criteria == 'COS':
       cos_sim = nn.CosineSimilarity(dim=-1, eps=0.00001)
-      self.criteria = lambda x, y: (1 - cos_sim.forward(x, y)).mean()
+      self.criteria = lambda x, y: (1 - cos_sim.forward(x, y)).mean()/self.temp
       # self.criteria = nn.CosineSimilarity(dim=-1, eps=0.00001)
     elif criteria == 'L1':
       self.criteria = nn.L1Loss()
@@ -291,7 +291,8 @@ def get_gradient(
     return grad, loss_value.item()
 
 def apply_diffjpeg(image, quality):
-    jpeg_quality = torch.tensor([quality]).to(image.device)
+    np.random.seed(1003)
+    jpeg_quality = torch.tensor([(quality+np.random.randint(-5,5))%80 + 20]).to(image.device)
     compressed_image = image.clone()
     compressed_image = (compressed_image / 2 + 0.5).clamp(0, 1) * 255
     compressed_image = diff_jpeg_coding_module(image_rgb=compressed_image, jpeg_quality=jpeg_quality)

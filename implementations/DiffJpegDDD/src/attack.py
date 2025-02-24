@@ -45,7 +45,7 @@ ddd_args = {
     "image_size": 512,
     "image_size_2d": (512, 512),
     "image_folder": "./test_images/",
-    "image_filenames":["011"],
+    "image_filenames":["001", "002", "003", "004", "005", "006", "007", "008", "011"],
     "strength": 0.7,
     "guidance_scale": 7.5,
     "num_inference_steps": 4
@@ -127,7 +127,7 @@ for filename in ddd_args["image_filenames"]:
     current_masked_image = current_masked_image.to(dtype=dtype, device=device)
 
     processor = SemanticCentroids(pipe_inpaint, device, dtype, ddd_args["image_size"], ddd_args["num_inference_steps"], input_text_embeddings)
-    attn_controller = processor.get_attention(current_mask, "MSE", loss_depth)
+    attn_controller = processor.get_attention(current_mask, "COS", loss_depth)
     processor.attention_processors(attn_controller)
     text_embeddings = processor.generate_samples(current_mask, current_masked_image, t_schedule, t_schedule_bound, n_samples, attn_controller)
 
@@ -178,5 +178,10 @@ for filename in ddd_args["image_filenames"]:
        adv_image.save(f'./{filename}/original_adversarial.png')
 
     # Inpainting Generation
-    inference = Inference(filename, "stabilityai/stable-diffusion-2-inpainting", models_path, diffjpeg=True)
-    inference.infer_images()
+    if diffjpeg:
+      inference = Inference(filename, "stabilityai/stable-diffusion-2-inpainting", models_path, diffjpeg=True)
+      inference.infer_images()
+    else:
+      inference = Inference(filename, "stabilityai/stable-diffusion-2-inpainting", models_path, diffjpeg=False)
+      inference.infer_images()
+    
