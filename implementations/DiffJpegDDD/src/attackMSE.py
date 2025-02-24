@@ -1,3 +1,5 @@
+"""This is just an old version using MSE for comparison purposes"""
+
 from sd import StableDiffusionInpaint, Inference
 from torchvision import transforms
 import torchvision

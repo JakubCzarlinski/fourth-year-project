@@ -127,7 +127,7 @@ for filename in ddd_args["image_filenames"]:
     current_masked_image = current_masked_image.to(dtype=dtype, device=device)
 
     processor = SemanticCentroids(pipe_inpaint, device, dtype, ddd_args["image_size"], ddd_args["num_inference_steps"], input_text_embeddings)
-    attn_controller = processor.get_attention(current_mask, "COS", loss_depth)
+    attn_controller = processor.get_attention(current_mask, "COS_NORMED", loss_depth)
     processor.attention_processors(attn_controller)
     text_embeddings = processor.generate_samples(current_mask, current_masked_image, t_schedule, t_schedule_bound, n_samples, attn_controller)
 

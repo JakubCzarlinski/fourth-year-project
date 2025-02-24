@@ -44,12 +44,14 @@ class AttnController:
     self.criteria_name = criteria
     self.target_depth = target_depth
     self.temp = 0.1
+    self.layer_weights = {256: 1, 64: 0.5}
+    self.l2weight = 0.1
 
     if criteria == 'MSE':
       self.criteria = nn.MSELoss()
-    elif criteria == 'COS':
+    elif criteria == 'COS' or criteria == 'COS_NORMED':
       cos_sim = nn.CosineSimilarity(dim=-1, eps=0.00001)
-      self.criteria = lambda x, y: (1 - cos_sim.forward(x, y)).mean()/self.temp
+      self.criteria = lambda x, y: ((1 - cos_sim.forward(x, y))/self.temp).mean()
       # self.criteria = nn.CosineSimilarity(dim=-1, eps=0.00001)
     elif criteria == 'L1':
       self.criteria = nn.L1Loss()
@@ -71,7 +73,7 @@ class AttnController:
       )
       new_mask = new_mask.flatten().unsqueeze(0).unsqueeze(2)
 
-      if self.criteria_name == 'COS':
+      if self.criteria_name == 'COS' or self.criteria_name == 'COS_NORMED':
         new_mask[new_mask == 0] = 0.01
 
       self.masks[hidden_shape] = new_mask
@@ -106,10 +108,20 @@ class AttnController:
       ba, h, c = a.shape
       loss = 0
       if loss_mask:
+        if self.criteria_name == 'COS_NORMED':
+          a_normed = torch.nn.functional.normalize(a, p=2, dim=-1)
+          b_normed = torch.nn.functional.normalize(b, p=2, dim=-1)
+          a_normed = a_normed * self.masks[h]
+          b_normed = b_normed * self.masks[h]
         a = a * self.masks[h]
         b = b * self.masks[h]
       if h in loss_depth:
-        loss = -self.criteria(a.detach(), b)
+        if self.criteria_name == 'COS_NORMED':
+          cos_loss = -self.criteria(a_normed.detach(), b_normed)
+          regularizer = -torch.norm(a-b, p=2) * self.l2weight
+          loss = self.layer_weights[h] * (cos_loss + regularizer)      
+        else:
+          loss = -self.criteria(a.detach(), b)
         losses += loss
 
       cur_loss += loss
