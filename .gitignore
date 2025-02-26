@@ -5,7 +5,8 @@ __pycache__/
 *.idea/*
 # C extensions
 *.so
-
+/implementations/DiffJpegDDD/python_experiments.sbatch
+/implementations/DiffJpegDDD/python.sbatch
 # Distribution / packaging
 .Python
 build/

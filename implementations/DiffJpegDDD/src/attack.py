@@ -44,8 +44,8 @@ dtype = torch.float16
 ddd_args = {
     "image_size": 512,
     "image_size_2d": (512, 512),
-    "image_folder": "./test_images/",
-    "image_filenames":["008"],
+    "image_folder": "../../fourth-year-project-dataset/",
+    "image_filenames":["396330"],
     "num_inference_steps": 4,
     "evaluation_metric": "MSE",
     "t_schedule": [720],
@@ -163,12 +163,12 @@ for filename in ddd_args["image_filenames"]:
     adv_image = recover_image(
         adv_image, original_image, masked_image, background=True
     )
-    os.makedirs(f"./{filename}", exist_ok=True)
+    experiment_filename = f"./Images/{filename}"
+    os.makedirs(experiment_filename, exist_ok=True)
     if diffjpeg:
-       adv_image.save(f'./{filename}/diffjpeg_adversarial.png')
+       adv_image.save(f'{experiment_filename}/diffjpeg_adversarial.png')
     else:
-       adv_image.save(f'./{filename}/original_adversarial.png')
-
+       adv_image.save(f'{experiment_filename}/original_adversarial.png')
     # Inpainting Generation
-    inference = Inference(filename, model_version, models_path, diffjpeg=True)
+    inference = Inference(ddd_args["image_folder"], experiment_filename, filename, model_version, models_path, diffjpeg=True)
     inference.infer_images()

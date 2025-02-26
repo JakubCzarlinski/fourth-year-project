@@ -53,8 +53,8 @@ def get_embeddings(pipe_inpaint, testing_filename):
     return gt_embeddings, uncond_embeddings
     
 def load_images(image_folder, filename, image_size_2d):
-  original_image = Image.open(f"{image_folder}{filename}.png").convert('RGB').resize(image_size_2d)
-  masked_image_original = Image.open(f"{image_folder}{filename}_masked.png").convert('RGB').resize(image_size_2d)
+  original_image = Image.open(f"{image_folder}original/{filename}.png").convert('RGB').resize(image_size_2d)
+  masked_image_original = Image.open(f"{image_folder}masks/{filename}_masked.png").convert('RGB').resize(image_size_2d)
   masked_image = ImageOps.invert(masked_image_original).resize(image_size_2d)
   return original_image, masked_image_original, masked_image
 

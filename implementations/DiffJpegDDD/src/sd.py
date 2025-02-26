@@ -74,13 +74,14 @@ class StableDiffusionInpaint:
     
 
 class Inference:
-    def __init__(self, testing_filename, image_name, model_version, models_path, diffjpeg=False, device="cuda"):
+    def __init__(self, image_folder, testing_filename, image_name, model_version, models_path, diffjpeg=False, device="cuda"):
         self.image_name = image_name
         self.testing_filename = testing_filename
         self.device = device
         self.diffjpeg = diffjpeg
         self.test_cases = [3, 4] if diffjpeg else [1, 2]
         self.seed = 1007
+        self.image_folder = image_folder
         self.pipe_inpaint = self.load_sd_pipeline(model_version, models_path)
 
     def load_sd_pipeline(self, model_version, models_path):
@@ -98,8 +99,8 @@ class Inference:
         return pipe
 
     def load_images(self, test):
-        init_image = Image.open(f'./test_images/{self.image_name}.png').convert('RGB').resize((512, 512))
-        mask_image = ImageOps.invert(Image.open(f'./test_images/{self.image_name}_masked.png').convert('RGB')).resize((512, 512))
+        init_image = Image.open(f'{self.image_folder}original/{self.image_name}.png').convert('RGB').resize((512, 512))
+        mask_image = ImageOps.invert(Image.open(f'{self.image_folder}masks/{self.image_name}_masked.png').convert('RGB')).resize((512, 512))
         adv_image = self.load_adversarial_image(test)
         return init_image, mask_image, adv_image
 
@@ -128,7 +129,7 @@ class Inference:
 
     def infer_images(self):
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-        prompts = load_prompt(f"prompts/{self.image_name}.txt")
+        prompts = load_prompt(f"{self.image_folder}prompts/{self.image_name}_prompts.txt")
 
         for test in self.test_cases:
             init_image, mask_image, adv_image = self.load_images(test)
