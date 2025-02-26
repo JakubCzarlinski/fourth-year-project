@@ -46,6 +46,8 @@ ddd_args = {
     "image_size_2d": (512, 512),
     "image_folder": "./test_images/",
     "image_filenames":["001", "002", "003", "004", "005", "006", "007", "008", "011"],
+    # "image_filenames":["001", "003", "004", "011"],
+    # "image_filenames":["003"],
     "strength": 0.7,
     "guidance_scale": 7.5,
     "num_inference_steps": 4
@@ -116,7 +118,7 @@ for filename in ddd_args["image_filenames"]:
     t_schedule = [720]
     t_schedule_bound = 10
     n_samples = 50
-    loss_depth = [256, 64]
+    loss_depth = [4096, 1024, 1007, 256, 64]
     SEED = 786349
     torch.manual_seed(SEED)
 
@@ -139,10 +141,10 @@ for filename in ddd_args["image_filenames"]:
     )
 
     # Finding Adversarial Perturbation for disrupting Inpainting that is robust to Jpeg Compression.
-    iters = 250
+    iters = 268
     grad_reps = 7
     loss_mask = True
-    eps = 12
+    eps = 13
     step_size = 3.0
     pixel_loss = 0
 

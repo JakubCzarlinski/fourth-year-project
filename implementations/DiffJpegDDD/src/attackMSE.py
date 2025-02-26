@@ -47,7 +47,7 @@ ddd_args = {
     "image_size": 512,
     "image_size_2d": (512, 512),
     "image_folder": "./test_images/",
-    "image_filenames":["001", "002", "003", "004", "005", "006", "007", "008", "011"],
+    "image_filenames":["009"],
     "strength": 0.7,
     "guidance_scale": 7.5,
     "num_inference_steps": 4

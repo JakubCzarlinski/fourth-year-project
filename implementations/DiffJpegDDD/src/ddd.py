@@ -44,7 +44,7 @@ class AttnController:
     self.criteria_name = criteria
     self.target_depth = target_depth
     self.temp = 0.1
-    self.layer_weights = {256: 1, 64: 0.5}
+    self.layer_weights = {4096:0.2, 1024:1, 1007:3, 256: 2, 64: 0.5}
     self.l2weight = 0.1
 
     if criteria == 'MSE':
@@ -84,6 +84,7 @@ class AttnController:
 
       uncond, cond = hidden.chunk(2)
       b, h, c = uncond.shape
+      # print(h)
 
       self.register_mask(h)
       if h in self.target_depth:
@@ -106,6 +107,7 @@ class AttnController:
 
     for i, (a, b) in enumerate(zip(source, self.targets)):
       ba, h, c = a.shape
+      print(h)
       loss = 0
       if loss_mask:
         if self.criteria_name == 'COS_NORMED':
@@ -117,9 +119,13 @@ class AttnController:
         b = b * self.masks[h]
       if h in loss_depth:
         if self.criteria_name == 'COS_NORMED':
-          cos_loss = -self.criteria(a_normed.detach(), b_normed)
-          regularizer = -torch.norm(a-b, p=2) * self.l2weight
-          loss = self.layer_weights[h] * (cos_loss + regularizer)      
+          if h in [64, 256]:
+            cos_loss = -self.criteria(a_normed.detach(), b_normed)
+            regularizer = -torch.norm(a-b, p=2) * self.l2weight
+            loss = self.layer_weights[h] * (cos_loss + regularizer)
+        # loss = cos_loss + regularizer
+          else:
+            loss = -self.criteria(a_normed.detach(), b_normed)     
         else:
           loss = -self.criteria(a.detach(), b)
         losses += loss
@@ -303,8 +309,7 @@ def get_gradient(
     return grad, loss_value.item()
 
 def apply_diffjpeg(image, quality):
-    np.random.seed(1003)
-    jpeg_quality = torch.tensor([(quality+np.random.randint(-5,5))%80 + 20]).to(image.device)
+    jpeg_quality = torch.tensor([quality]).to(image.device)
     compressed_image = image.clone()
     compressed_image = (compressed_image / 2 + 0.5).clamp(0, 1) * 255
     compressed_image = diff_jpeg_coding_module(image_rgb=compressed_image, jpeg_quality=jpeg_quality)
@@ -342,7 +347,8 @@ def disrupt(
         text_embed = get_random_emb(text_embeddings)
         
         for _ in range(grad_reps):
-            quality = count % 80 + 20
+            np.random.seed(count)
+            quality = (count + np.random.randint(-5,5)) % 80 + 20
             count += 1
             c_grad, loss_value = get_gradient(
                 cur_mask, X_adv, text_embed, pipe, attn_controller, loss_depth, loss_mask, random_t, quality, diffjpeg
