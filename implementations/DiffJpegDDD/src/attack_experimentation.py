@@ -18,8 +18,8 @@ diff_jpeg_coding_module = DiffJPEGCoding()
 torch.backends.cuda.matmul.allow_tf32 = True
 to_pil = transforms.ToPILImage()
 
-experiment_name = "refactor"
-experiment_explanation = " This is just a test"
+experiment_name = "You didn't name your experiment!"
+experiment_explanation = "You didn't explain your experiment!"
 
 def dict_to_args_parser():
   args_dict = {
@@ -70,6 +70,16 @@ if ddd_type == "original":
 else:
    diffjpeg = True
 
+experiment_name=sys.argv[2]
+experiment_explanation=sys.argv[3]
+
+
+for j,parameter in enumerate([p for i,p in enumerate(sys.argv[4:]) if i%2 ==0]):
+   if parameter in ddd_args:
+      ddd_args[parameter]=type(ddd_args[parameter])(sys.argv[2*j+5])
+      
+
+print(ddd_args)
 DCS = True
 username = "sneakers-pretrained-models"
 if DCS:

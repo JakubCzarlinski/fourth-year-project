@@ -15,7 +15,6 @@ from torchmetrics.image.ssim import (
 from torchmetrics.image.ssim import StructuralSimilarityIndexMeasure as SSIM
 from torchvision import transforms
 from tqdm import tqdm
-import torch_dct as dct
 import random
 to_pil = transforms.ToPILImage()
 from diff_jpeg import DiffJPEGCoding
