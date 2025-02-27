@@ -46,8 +46,6 @@ ddd_args = {
     "image_size_2d": (512, 512),
     "image_folder": "./test_images/",
     "image_filenames":["001", "002", "003", "004", "005", "006", "007", "008", "011"],
-    # "image_filenames":["001", "003", "004", "011"],
-    # "image_filenames":["003"],
     "strength": 0.7,
     "guidance_scale": 7.5,
     "num_inference_steps": 4
@@ -180,10 +178,7 @@ for filename in ddd_args["image_filenames"]:
        adv_image.save(f'./{filename}/original_adversarial.png')
 
     # Inpainting Generation
-    if diffjpeg:
-      inference = Inference(filename, "stabilityai/stable-diffusion-2-inpainting", models_path, diffjpeg=True)
-      inference.infer_images()
-    else:
-      inference = Inference(filename, "stabilityai/stable-diffusion-2-inpainting", models_path, diffjpeg=False)
-      inference.infer_images()
+    inference = Inference(filename, "stabilityai/stable-diffusion-2-inpainting", models_path, diffjpeg=diffjpeg)
+    inference.infer_images()
+
     
