@@ -1,0 +1,1 @@
+Optimisation mask randomly chooses between head and body

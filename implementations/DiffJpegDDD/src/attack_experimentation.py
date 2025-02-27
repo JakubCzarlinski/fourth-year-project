@@ -48,7 +48,7 @@ ddd_args = {
     "image_size": 512,
     "image_size_2d": (512, 512),
     "image_folder": "./tests/",
-    "image_filenames":["008"],
+    "image_filenames":["001", "002", "003", "004", "005", "006", "007", "008", "011"],
     "num_inference_steps": 4,
     "evaluation_metric": "MSE",
     "t_schedule": [720],

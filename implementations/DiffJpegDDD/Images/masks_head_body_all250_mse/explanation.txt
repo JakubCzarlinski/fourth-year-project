@@ -1,0 +1,1 @@
+Optimisation mask odd even chooses between head part and body part of mask. Use mse optmisation

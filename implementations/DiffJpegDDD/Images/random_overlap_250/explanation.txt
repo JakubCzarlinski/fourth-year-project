@@ -1,0 +1,1 @@
+Optimisation mask randomly chooses a random mask that overlaps significantly with cur_mask

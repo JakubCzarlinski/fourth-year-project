@@ -1,0 +1,1 @@
+Optimisation mask curmask erodes each iteration. If eroded too small, then restart. mse metric

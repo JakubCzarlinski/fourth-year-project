@@ -1,0 +1,1 @@
+Optimisation mask randomly chooses between head and body. Then after 150 iterations it just uses the full mask

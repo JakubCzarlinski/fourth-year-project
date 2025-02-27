@@ -3,6 +3,7 @@ from typing import Union
 import numpy as np
 import torch
 import utils
+import torch.nn.functional as F
 import xformers.ops as xops
 from diffusers import StableDiffusionInpaintPipeline
 from diffusers import UNet2DConditionModel
@@ -256,7 +257,8 @@ def get_gradient(
     loss_mask: bool,
     random_t: torch.Tensor,
     quality = 4,
-    diffjpeg: bool = True
+    diffjpeg: bool = True,
+    optimisation_mask: torch.Tensor = None
 ):
     torch.set_grad_enabled(True)
     cur_mask.requires_grad = False
@@ -286,7 +288,7 @@ def get_gradient(
           )
     
     loss_value = attn_controller.loss(loss_mask, loss_depth)
-    grad = torch.autograd.grad(loss_value, [cur_masked_image])[0] * (1 - cur_mask)
+    grad = torch.autograd.grad(loss_value, [cur_masked_image])[0] * (1 - optimisation_mask)
     return grad, loss_value.item()
 
 def apply_diffjpeg(image, quality):
@@ -295,6 +297,38 @@ def apply_diffjpeg(image, quality):
     compressed_image = (compressed_image / 2 + 0.5).clamp(0, 1) * 255
     compressed_image = diff_jpeg_coding_module(image_rgb=compressed_image, jpeg_quality=jpeg_quality)
     return ((torch.abs(compressed_image) / 255 - 0.5) * 2).clamp(-1, 1).to(torch.float16)
+
+def maskGenerator(cur_mask):
+    assert cur_mask.ndim == 4 and cur_mask.shape[0] == 1 and cur_mask.shape[1] == 1, "Expected shape (1,1,H,W)"
+
+    mask = cur_mask[0, 0] 
+    
+    binary_mask = (mask == 0).to(torch.float32)
+
+    H, W = mask.shape
+
+    y_indices, _ = torch.meshgrid(
+        torch.arange(H, device="cuda"), torch.arange(W, device="cuda"), indexing="ij"
+    )
+    total_mass = binary_mask.sum()
+
+    if total_mass == 0:
+        return cur_mask
+
+    com_y = (binary_mask * y_indices).sum() / total_mass
+    com_y = int(com_y.item())
+
+    body = mask.clone() 
+    body[:com_y, :] = 1
+    head = mask.clone() 
+    head[com_y:, :] = 1
+    return body.unsqueeze(0).unsqueeze(0), head.unsqueeze(0).unsqueeze(0)
+
+def erode_mask(mask, kernel_size=3):
+
+    pad = kernel_size // 2  # Ensure same output size
+    mask = F.max_pool2d(mask, kernel_size, stride=1, padding=pad)
+    return mask
 
 def disrupt(
     cur_mask: torch.Tensor,
@@ -322,13 +356,13 @@ def disrupt(
     gen.manual_seed(1003)
     count = 0
 
+    # optimisation_mask = cur_mask.clone()
     for j in iterator:
         random_t = get_random_t(t_schedule, t_schedule_bound)
         all_grads, value_losses = [], []
         text_embed = get_random_emb(text_embeddings)
         
-        
-        for _ in range(grad_reps):
+        for g in range(grad_reps):
             quality = count % 80 + 20
             count += 1
             c_grad, loss_value = get_gradient(
@@ -341,7 +375,8 @@ def disrupt(
                 loss_mask, 
                 random_t, 
                 quality, 
-                diffjpeg
+                diffjpeg,
+                cur_mask
             )
             all_grads.append(c_grad.detach())
             value_losses.append(loss_value)
@@ -350,7 +385,15 @@ def disrupt(
         grad = torch.stack(all_grads).mean(dim=0)
         total_losses.append([np.mean(value_losses)])
         iterator.set_description_str(f'Loss: {total_losses[-1][0]:.5f}')
-
+        # optimisation_mask = erode_mask(optimisation_mask)
+        # overlap = (cur_mask.shape[2] * cur_mask.shape[3]) - optimisation_mask.to(torch.float64).sum().item()
+        # box_shape = (cur_mask.shape[2] // 4, cur_mask.shape[3] // 4)
+        # if overlap < box_shape[0]*box_shape[1]//4:
+        #   #  raise Exception(f"Masks didn't work: {overlap} and {box_shape[0]*box_shape[1]//4}")
+        #    optimisation_mask = cur_mask.clone()
+        # head_test = optimisation_mask.cpu().detach().numpy()[0][0]
+        # im = Image.fromarray((head_test * 255).astype(np.uint8))
+        # im.save(f'mask_test/mask{j}.png')
         X_adv.data = grad_to_adv(
           X=X,
           X_adv=X_adv,
