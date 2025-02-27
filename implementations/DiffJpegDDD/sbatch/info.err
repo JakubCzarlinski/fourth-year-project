@@ -1,51 +1,0 @@
-Loading pipeline components...:   0%|          | 0/6 [00:00<?, ?it/s]Loading pipeline components...:  33%|███▎      | 2/6 [00:00<00:01,  2.21it/s]Loading pipeline components...:  50%|█████     | 3/6 [00:01<00:00,  3.17it/s]Loading pipeline components...:  67%|██████▋   | 4/6 [00:01<00:00,  3.62it/s]Loading pipeline components...: 100%|██████████| 6/6 [00:01<00:00,  3.73it/s]Loading pipeline components...: 100%|██████████| 6/6 [00:01<00:00,  3.41it/s]
-Traceback (most recent call last):
-  File "/dcs/large/sneakers-pretrained-models/fourth-year-project/implementations/DiffJpegDDD/./src/unetinfo.py", line 31, in <module>
-    output = unet(latent, timestep, encoder_hidden_states).sample
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102122/.conda/envs/DDDD/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102122/.conda/envs/DDDD/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1750, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102122/.conda/envs/DDDD/lib/python3.11/site-packages/diffusers/models/unets/unet_2d_condition.py", line 1216, in forward
-    sample, res_samples = downsample_block(
-                          ^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102122/.conda/envs/DDDD/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102122/.conda/envs/DDDD/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1845, in _call_impl
-    return inner()
-           ^^^^^^^
-  File "/dcs/21/u2102122/.conda/envs/DDDD/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1793, in inner
-    result = forward_call(*args, **kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102122/.conda/envs/DDDD/lib/python3.11/site-packages/diffusers/models/unets/unet_2d_blocks.py", line 1334, in forward
-    hidden_states = attn(
-                    ^^^^^
-  File "/dcs/21/u2102122/.conda/envs/DDDD/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102122/.conda/envs/DDDD/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1845, in _call_impl
-    return inner()
-           ^^^^^^^
-  File "/dcs/21/u2102122/.conda/envs/DDDD/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1793, in inner
-    result = forward_call(*args, **kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102122/.conda/envs/DDDD/lib/python3.11/site-packages/diffusers/models/transformers/transformer_2d.py", line 442, in forward
-    hidden_states = block(
-                    ^^^^^^
-  File "/dcs/21/u2102122/.conda/envs/DDDD/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1739, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102122/.conda/envs/DDDD/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1845, in _call_impl
-    return inner()
-           ^^^^^^^
-  File "/dcs/21/u2102122/.conda/envs/DDDD/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1793, in inner
-    result = forward_call(*args, **kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102122/.conda/envs/DDDD/lib/python3.11/site-packages/diffusers/models/attention.py", line 558, in forward
-    hidden_states = attn_output + hidden_states
-                    ~~~~~~~~~~~~^~~~~~~~~~~~~~~
-RuntimeError: The size of tensor a (2880) must match the size of tensor b (9) at non-singleton dimension 1
