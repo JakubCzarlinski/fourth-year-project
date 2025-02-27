@@ -18,6 +18,9 @@ diff_jpeg_coding_module = DiffJPEGCoding()
 torch.backends.cuda.matmul.allow_tf32 = True
 to_pil = transforms.ToPILImage()
 
+experiment_name = "You didn't name your experiment!"
+experiment_explanation = "You didn't explain your experiment!"
+
 def dict_to_args_parser():
   args_dict = {
     "prompt_len": 16,
@@ -44,18 +47,18 @@ dtype = torch.float16
 ddd_args = {
     "image_size": 512,
     "image_size_2d": (512, 512),
-    "image_folder": "../../fourth-year-project-dataset/",
-    "image_filenames":["001", "002", "003", "004", "005", "006", "007", "008", "396330"],
+    "image_folder": "./tests/",
+    "image_filenames":["008"],
     "num_inference_steps": 4,
-    "evaluation_metric": "COS_NORMED",
+    "evaluation_metric": "MSE",
     "t_schedule": [720],
     "t_schedule_bound": 10,
     "centroids_n_samples": 50,
-    "loss_depth": [4096, 1024, 1007, 256, 64],
-    "iters": 268,
+    "loss_depth": [256, 64],
+    "iters": 250,
     "grad_reps": 7,
     "loss_mask": True,
-    "eps": 13,
+    "eps": 12,
     "step_size": 3.0,
     "pixel_loss": 0
 }
@@ -67,6 +70,16 @@ if ddd_type == "original":
 else:
    diffjpeg = True
 
+experiment_name=sys.argv[2]
+experiment_explanation=sys.argv[3]
+
+
+for j,parameter in enumerate([p for i,p in enumerate(sys.argv[4:]) if i%2 ==0]):
+   if parameter in ddd_args:
+      ddd_args[parameter]=type(ddd_args[parameter])(sys.argv[2*j+5])
+      
+
+print(ddd_args)
 DCS = True
 username = "sneakers-pretrained-models"
 if DCS:
@@ -156,21 +169,23 @@ for filename in ddd_args["image_filenames"]:
         grad_reps=ddd_args["grad_reps"],
         diffjpeg=diffjpeg
     )
-
+    experiment_filename = f"./Images/{experiment_name}/{filename}"
     # Get Protected Image
     adv_X = (result[0] / 2 + 0.5).clamp(0, 1)
     adv_image = to_pil(adv_X.to(torch.float32)).convert("RGB")
     adv_image = recover_image(
         adv_image, original_image, masked_image, background=True
     )
-    experiment_filename = f"./Images/{filename}"
     os.makedirs(experiment_filename, exist_ok=True)
     if diffjpeg:
        adv_image.save(f'{experiment_filename}/diffjpeg_adversarial.png')
     else:
        adv_image.save(f'{experiment_filename}/original_adversarial.png')
+
     # Inpainting Generation
     inference = Inference(ddd_args["image_folder"], experiment_filename, filename, model_version, models_path, diffjpeg=True)
     inference.infer_images()
 
-    
+with open(f"./Images/{experiment_name}/explanation.txt", "w") as file:
+   file.write(experiment_explanation)
+

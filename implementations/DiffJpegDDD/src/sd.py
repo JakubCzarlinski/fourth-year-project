@@ -74,12 +74,14 @@ class StableDiffusionInpaint:
     
 
 class Inference:
-    def __init__(self, testing_filename, model_version, models_path, diffjpeg=False, device="cuda"):
+    def __init__(self, image_folder, testing_filename, image_name, model_version, models_path, diffjpeg=False, device="cuda"):
+        self.image_name = image_name
         self.testing_filename = testing_filename
         self.device = device
         self.diffjpeg = diffjpeg
         self.test_cases = [3, 4] if diffjpeg else [1, 2]
         self.seed = 1007
+        self.image_folder = image_folder
         self.pipe_inpaint = self.load_sd_pipeline(model_version, models_path)
 
     def load_sd_pipeline(self, model_version, models_path):
@@ -97,16 +99,16 @@ class Inference:
         return pipe
 
     def load_images(self, test):
-        init_image = Image.open(f'./test_images/{self.testing_filename}.png').convert('RGB').resize((512, 512))
-        mask_image = ImageOps.invert(Image.open(f'./test_images/{self.testing_filename}_masked.png').convert('RGB')).resize((512, 512))
+        init_image = Image.open(f'{self.image_folder}original/{self.image_name}.png').convert('RGB').resize((512, 512))
+        mask_image = ImageOps.invert(Image.open(f'{self.image_folder}masks/{self.image_name}_masked.png').convert('RGB')).resize((512, 512))
         adv_image = self.load_adversarial_image(test)
         return init_image, mask_image, adv_image
 
     def load_adversarial_image(self, test):        
         if test==1:
-            return Image.open(f'./{self.testing_filename}/original_adversarial.png').resize((512, 512))
+            return Image.open(f'{self.testing_filename}/original_adversarial.png').resize((512, 512))
         if test==2:
-            adv_image = torchvision.io.read_image(f'./{self.testing_filename}/original_adversarial.png').float()[None]
+            adv_image = torchvision.io.read_image(f'{self.testing_filename}/original_adversarial.png').float()[None]
             jpeg_quality = torch.tensor([50])
             image_coded = diff_jpeg_coding_module(image_rgb=adv_image, jpeg_quality=jpeg_quality)
             torch_image = image_coded.squeeze(0)
@@ -114,10 +116,10 @@ class Inference:
             adv_image = to_pil(torch_image / 255).resize((512, 512))
             return adv_image
         if test==3:
-            adv_image = Image.open(f'./{self.testing_filename}/diffjpeg_adversarial.png').resize((512, 512))
+            adv_image = Image.open(f'{self.testing_filename}/diffjpeg_adversarial.png').resize((512, 512))
             return adv_image
         if test==4:
-            adv_image = torchvision.io.read_image(f'./{self.testing_filename}/diffjpeg_adversarial.png').float()[None]
+            adv_image = torchvision.io.read_image(f'{self.testing_filename}/diffjpeg_adversarial.png').float()[None]
             jpeg_quality = torch.tensor([50])
             image_coded = diff_jpeg_coding_module(image_rgb=adv_image, jpeg_quality=jpeg_quality)
             torch_image = image_coded.squeeze(0)
@@ -127,7 +129,7 @@ class Inference:
 
     def infer_images(self):
         os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-        prompts = load_prompt(f"prompts/{self.testing_filename}.txt")
+        prompts = load_prompt(f"{self.image_folder}prompts/{self.image_name}_prompts.txt")
 
         for test in self.test_cases:
             init_image, mask_image, adv_image = self.load_images(test)
@@ -169,7 +171,7 @@ class Inference:
         fig.tight_layout()
 
         save_dirs = ["ddd_fast", "ddd_fast_compressed", "diffjpeg", "diffjpeg_compressed"]
-        os.makedirs(f"./{self.testing_filename}/{save_dirs[test-1]}", exist_ok=True)
-        image_adv.save(f"./{self.testing_filename}/{save_dirs[test-1]}/prompt{promptnum}.png")
-        plt.savefig(f'./{self.testing_filename}/{save_dirs[test-1]}/result_prompt{promptnum}.png')
+        os.makedirs(f"{self.testing_filename}/{save_dirs[test-1]}", exist_ok=True)
+        image_adv.save(f"{self.testing_filename}/{save_dirs[test-1]}/prompt{promptnum}.png")
+        plt.savefig(f'{self.testing_filename}/{save_dirs[test-1]}/result_prompt{promptnum}.png')
         plt.clf()
