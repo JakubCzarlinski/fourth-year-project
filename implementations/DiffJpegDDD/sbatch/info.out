@@ -1,0 +1,92 @@
+
+Layer: down_blocks.0.resnets.0.norm1
+Input shapes: [torch.Size([320, 320, 3, 3])]
+Output shape: torch.Size([320, 320, 3, 3])
+
+Layer: down_blocks.0.resnets.0.conv1
+Input shapes: [torch.Size([320, 320, 3, 3])]
+Output shape: torch.Size([320, 320, 3, 3])
+
+Layer: down_blocks.0.resnets.0.time_emb_proj
+Input shapes: [torch.Size([320, 1280])]
+Output shape: torch.Size([320, 320])
+
+Layer: down_blocks.0.resnets.0.norm2
+Input shapes: [torch.Size([320, 320, 3, 3])]
+Output shape: torch.Size([320, 320, 3, 3])
+
+Layer: down_blocks.0.resnets.0.dropout
+Input shapes: [torch.Size([320, 320, 3, 3])]
+Output shape: torch.Size([320, 320, 3, 3])
+
+Layer: down_blocks.0.resnets.0.conv2
+Input shapes: [torch.Size([320, 320, 3, 3])]
+Output shape: torch.Size([320, 320, 3, 3])
+
+Layer: down_blocks.0.resnets.0
+Input shapes: [torch.Size([320, 320, 3, 3]), torch.Size([320, 1280])]
+Output shape: torch.Size([320, 320, 3, 3])
+
+Layer: down_blocks.0.attentions.0.norm
+Input shapes: [torch.Size([320, 320, 3, 3])]
+Output shape: torch.Size([320, 320, 3, 3])
+
+Layer: down_blocks.0.attentions.0.proj_in
+Input shapes: [torch.Size([320, 9, 320])]
+Output shape: torch.Size([320, 9, 320])
+
+Layer: down_blocks.0.attentions.0.transformer_blocks.0.norm1
+Input shapes: [torch.Size([320, 9, 320])]
+Output shape: torch.Size([320, 9, 320])
+
+Layer: down_blocks.0.attentions.0.transformer_blocks.0.attn1.to_q
+Input shapes: [torch.Size([320, 9, 320])]
+Output shape: torch.Size([320, 9, 320])
+
+Layer: down_blocks.0.attentions.0.transformer_blocks.0.attn1.to_k
+Input shapes: [torch.Size([320, 9, 320])]
+Output shape: torch.Size([320, 9, 320])
+
+Layer: down_blocks.0.attentions.0.transformer_blocks.0.attn1.to_v
+Input shapes: [torch.Size([320, 9, 320])]
+Output shape: torch.Size([320, 9, 320])
+
+Layer: down_blocks.0.attentions.0.transformer_blocks.0.attn1.to_out.0
+Input shapes: [torch.Size([320, 9, 320])]
+Output shape: torch.Size([320, 9, 320])
+
+Layer: down_blocks.0.attentions.0.transformer_blocks.0.attn1.to_out.1
+Input shapes: [torch.Size([320, 9, 320])]
+Output shape: torch.Size([320, 9, 320])
+
+Layer: down_blocks.0.attentions.0.transformer_blocks.0.attn1
+Input shapes: [torch.Size([320, 9, 320])]
+Output shape: torch.Size([320, 9, 320])
+
+Layer: down_blocks.0.attentions.0.transformer_blocks.0.norm2
+Input shapes: [torch.Size([320, 9, 320])]
+Output shape: torch.Size([320, 9, 320])
+
+Layer: down_blocks.0.attentions.0.transformer_blocks.0.attn2.to_q
+Input shapes: [torch.Size([320, 9, 320])]
+Output shape: torch.Size([320, 9, 320])
+
+Layer: down_blocks.0.attentions.0.transformer_blocks.0.attn2.to_k
+Input shapes: [torch.Size([1, 77, 1024])]
+Output shape: torch.Size([1, 77, 320])
+
+Layer: down_blocks.0.attentions.0.transformer_blocks.0.attn2.to_v
+Input shapes: [torch.Size([1, 77, 1024])]
+Output shape: torch.Size([1, 77, 320])
+
+Layer: down_blocks.0.attentions.0.transformer_blocks.0.attn2.to_out.0
+Input shapes: [torch.Size([1, 2880, 320])]
+Output shape: torch.Size([1, 2880, 320])
+
+Layer: down_blocks.0.attentions.0.transformer_blocks.0.attn2.to_out.1
+Input shapes: [torch.Size([1, 2880, 320])]
+Output shape: torch.Size([1, 2880, 320])
+
+Layer: down_blocks.0.attentions.0.transformer_blocks.0.attn2
+Input shapes: [torch.Size([320, 9, 320])]
+Output shape: torch.Size([1, 2880, 320])

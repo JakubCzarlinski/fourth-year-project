@@ -20,6 +20,7 @@ mkdir mask_test
 
 ## Execute your program(s) ##
 module load CUDA
-conda activate group
+conda activate DDDD
 
+# python3 ./src/attackMSE.py "original"
 python3 ./src/attack.py "diffjpeg"
