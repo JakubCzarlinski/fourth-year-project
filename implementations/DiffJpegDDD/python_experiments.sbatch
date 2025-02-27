@@ -15,9 +15,6 @@
 source /etc/profile.d/modules.sh
 source /etc/profile.d/conda.sh
 
-rm -rf mask_test
-mkdir mask_test
-
 ## Execute your program(s) ##
 module load CUDA
 conda activate group

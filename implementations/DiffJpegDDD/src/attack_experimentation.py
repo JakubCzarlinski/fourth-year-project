@@ -50,15 +50,15 @@ ddd_args = {
     "image_folder": "./tests/",
     "image_filenames":["008"],
     "num_inference_steps": 4,
-    "evaluation_metric": "MSE",
+    "evaluation_metric": "COS_NORMED",
     "t_schedule": [720],
     "t_schedule_bound": 10,
     "centroids_n_samples": 50,
-    "loss_depth": [256, 64],
-    "iters": 250,
+    "loss_depth": [4096, 1024, 1007, 256, 64],
+    "iters": 268,
     "grad_reps": 7,
     "loss_mask": True,
-    "eps": 12,
+    "eps": 13,
     "step_size": 3.0,
     "pixel_loss": 0
 }
@@ -183,7 +183,7 @@ for filename in ddd_args["image_filenames"]:
        adv_image.save(f'{experiment_filename}/original_adversarial.png')
 
     # Inpainting Generation
-    inference = Inference(ddd_args["image_folder"], experiment_filename, filename, model_version, models_path, diffjpeg=True)
+    inference = Inference(ddd_args["image_folder"], experiment_filename, filename, model_version, models_path, diffjpeg=diffjpeg)
     inference.infer_images()
 
 with open(f"./Images/{experiment_name}/explanation.txt", "w") as file:

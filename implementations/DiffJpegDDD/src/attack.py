@@ -44,8 +44,8 @@ dtype = torch.float16
 ddd_args = {
     "image_size": 512,
     "image_size_2d": (512, 512),
-    "image_folder": "../../fourth-year-project-dataset/",
-    "image_filenames":["001", "002", "003", "004", "005", "006", "007", "008", "396330"],
+    "image_folder": "./tests/",
+    "image_filenames":["008"],
     "num_inference_steps": 4,
     "evaluation_metric": "COS_NORMED",
     "t_schedule": [720],
@@ -170,7 +170,7 @@ for filename in ddd_args["image_filenames"]:
     else:
        adv_image.save(f'{experiment_filename}/original_adversarial.png')
     # Inpainting Generation
-    inference = Inference(ddd_args["image_folder"], experiment_filename, filename, model_version, models_path, diffjpeg=True)
+    inference = Inference(ddd_args["image_folder"], experiment_filename, filename, model_version, models_path, diffjpeg=diffjpeg)
     inference.infer_images()
 
     
