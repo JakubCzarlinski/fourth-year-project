@@ -1,0 +1,1 @@
+Changing quality factor of JPEG within grad reps. quality= normally generated random float with mean 50 and std deviation 10

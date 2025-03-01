@@ -1,0 +1,1 @@
+Changing quality factor of JPEG within grad reps.Starts at count=50. quality= COUNT+-RANDOM5 with COS loss

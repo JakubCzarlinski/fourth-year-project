@@ -1,0 +1,1 @@
+Changing quality factor of JPEG within grad reps. quality= uniformly generated random int from 20 to 99 with COS loss
