@@ -19,6 +19,6 @@ source /etc/profile.d/conda.sh
 module load CUDA
 conda activate group
 
-python3 ./src/attack_experimentation.py diffjpeg ""experiment_name"" ""experiment_explanation"" ""parameter_name"" ""edited_parameter_value""
+python3 ./src/attack_experimentation.py diffjpeg "Varying-step_size-on-best-model-188" "Using step size = init*(1/(1+iterations)) and reducing the number of iterations to 188"
 #e.g
 #python3 ./src/attack_experimentation.py diffjpeg "ArgumentChangeTest" "Testing that we edited arguments correctly" iters 50

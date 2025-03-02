@@ -340,7 +340,7 @@ def disrupt(
     gen = torch.Generator(device='cuda')
     gen.manual_seed(1003)
     count = 0
-
+    initital_step_size=150.0
     for j in iterator:
         random_t = get_random_t(t_schedule, t_schedule_bound)
         all_grads, value_losses = [], []
@@ -375,7 +375,7 @@ def disrupt(
           X=X,
           X_adv=X_adv,
           grad=grad,
-          step_size=step_size,
+          step_size=initital_step_size*(1.0/float(j+1)),
           iters=iters,
           eps=eps,
           clamp_min=clamp_min,
