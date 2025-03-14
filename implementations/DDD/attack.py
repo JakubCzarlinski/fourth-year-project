@@ -7,15 +7,14 @@ import copy
 import datetime
 
 import ddd
-
 import matplotlib.pyplot as plt
 import torch
 import utils
 import utils_text
-from diffusers import AutoencoderKL
-from diffusers import BitsAndBytesConfig
-from diffusers import StableDiffusionInpaintPipeline
-from diffusers import UNet2DConditionModel
+from diffusers import AutoencoderKL  # type: ignore
+from diffusers import BitsAndBytesConfig  # type: ignore
+from diffusers import StableDiffusionInpaintPipeline  # type: ignore
+from diffusers import UNet2DConditionModel  # type: ignore
 from PIL import Image
 from PIL import ImageOps
 from torchvision import transforms

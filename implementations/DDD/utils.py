@@ -283,23 +283,32 @@ def get_image_latents(self, image, sample=True, rng_generator=None):
   return latents
 
 
-def prepare_mask_and_masked2(image, mask, no_mask=False, inverted=False):
+def prepare_mask_and_masked2(
+    image: Image.Image,
+    mask: Image.Image,
+) -> tuple[torch.Tensor, torch.Tensor]:
+  """
+    Preprocesses an image and mask for deep learning models.
+
+    Args:
+        image: Input image (PIL Image)
+        mask: Input mask (PIL Image)
+        inverted: If True, inverts the mask values
+
+    Returns:
+        (mask_tensor, masked_image_tensor)
+    """
+  # Convert image to tensor and normalize
   image = np.array(image.convert("RGB"))
   image = image[None].transpose(0, 3, 1, 2)
   image = torch.from_numpy(image).to(dtype=torch.float32) / 127.5 - 1.0
 
-  mask = np.array(mask.convert("L"))
-  mask = mask.astype(np.float32) / 255.0
+  # Convert mask to binary tensor
+  mask = np.array(mask.convert("L")).astype(np.float32) / 255.0
   mask = mask[None, None]
-  mask[mask < 0.5] = 0
-  mask[mask >= 0.5] = 1
-  if inverted:
-    mask[mask >= 1] = 2
-    mask[mask <= 1] = 1
-    mask[mask == 2] = 0
-  if no_mask:
-    mask[mask >= 0] = 1
-  mask = torch.from_numpy(mask)
+  mask = (mask >= 0.5).astype(np.float32)
+
+  mask = torch.from_numpy(1 - mask)
   masked_image = image * (mask < 0.5)
 
-  return mask, masked_image, image
+  return mask, masked_image

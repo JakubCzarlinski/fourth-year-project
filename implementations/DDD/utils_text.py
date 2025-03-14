@@ -14,6 +14,7 @@ from sentence_transformers.util import dot_score
 from sentence_transformers.util import normalize_embeddings
 from sentence_transformers.util import semantic_search
 from transformers.modeling_outputs import BaseModelOutputWithPooling
+from xformers.ops.fmha import attn_bias
 
 
 def read_json(filename: str) -> dict[str, Any]:
@@ -117,11 +118,14 @@ def get_target_feature(
 
 def initialize_prompt(tokenizer, token_embedding, args, device):
   prompt_len = args.prompt_len
+  prompt_batch_size = args.prompt_bs
 
-  # randomly optimize prompt embeddings
+  # Randomly optimize prompt embeddings
   prompt_ids = torch.randint(
-      len(tokenizer.encoder), (args.prompt_bs, prompt_len)
-  ).to(device)
+      high=len(tokenizer.encoder),
+      size=(prompt_batch_size, prompt_len),
+      device=device,
+  )
   prompt_embeds = token_embedding(prompt_ids).detach()
   prompt_embeds.requires_grad = True
 
@@ -136,7 +140,7 @@ def initialize_prompt(tokenizer, token_embedding, args, device):
   dummy_ids = [i if i != 49406 else -1 for i in dummy_ids]
   dummy_ids = [49406] + dummy_ids + [49407]
   dummy_ids += [0] * (77 - len(dummy_ids))
-  dummy_ids = torch.tensor([dummy_ids] * args.prompt_bs).to(device)
+  dummy_ids = torch.tensor([dummy_ids] * prompt_batch_size, device=device)
 
   # for getting dummy embeds; -1 won't work for token_embedding
   tmp_dummy_ids = copy.deepcopy(dummy_ids)
@@ -303,7 +307,8 @@ def get_text_embedding_with_embeddings(
 
   return text_embeddings[0]
 
-@torch.compile(backend="cudagraphs")
+
+@torch.compile
 def encode_embeddings(self, prompt, prompt_embeddings, attention_mask=None):
   output_attentions = self.text_encoder.text_model.config.output_attentions
   output_hidden_states = (
@@ -315,11 +320,14 @@ def encode_embeddings(self, prompt, prompt_embeddings, attention_mask=None):
       inputs_embeds=prompt_embeddings
   )
 
-  bsz, seq_len = prompt.shape[0], prompt.shape[1]
+  bsz, seq_len = prompt.shape
 
-  causal_attention_mask = build_causal_attention_mask(
-      bsz, seq_len, hidden_states.dtype, hidden_states.device
+  causal_attention_mask = attn_bias._materialize_causal_mask(
+      shape=(bsz, seq_len, seq_len),
+      dtype=hidden_states.dtype,
+      device=hidden_states.device,
   )
+
   # expand attention_mask
   if attention_mask is not None:
     # [bsz, seq_len] -> [bsz, 1, tgt_seq_len, src_seq_len]
@@ -354,13 +362,3 @@ def encode_embeddings(self, prompt, prompt_embeddings, attention_mask=None):
       hidden_states=encoder_outputs.hidden_states,
       attentions=encoder_outputs.attentions,
   )
-
-
-def build_causal_attention_mask(bsz, seq_len, dtype, device):
-  # lazily create causal attention mask, with full attention between the vision tokens
-  # pytorch uses additive attention mask; fill with -inf
-  mask = torch.empty(bsz, seq_len, seq_len, dtype=dtype, device=device)
-  mask.fill_(float("-inf"))
-  mask.triu_(1)  # zero out the lower diagonal
-  mask = mask.unsqueeze(1)  # expand mask
-  return mask

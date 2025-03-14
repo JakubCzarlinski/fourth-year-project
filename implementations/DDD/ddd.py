@@ -242,7 +242,8 @@ def pred_noise(
       sample=latent_model_input,
       timestep=t,
       encoder_hidden_states=text_embeddings,
-  ).sample
+      return_dict=False,
+  )[0]
   noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
   noise_pred_cfg = noise_pred_uncond + guidance_scale * (
       noise_pred_text - noise_pred_uncond
@@ -297,7 +298,7 @@ def get_random_t(t_schedule, t_schedule_bound):
   return torch.tensor(result)
 
 
-def get_random_emb(embs):
+def get_random_emb(embs: list[torch.Tensor]):
   rand_pos = np.random.randint(0, len(embs))
   return embs[rand_pos]
 
@@ -305,7 +306,7 @@ def get_random_emb(embs):
 def disrupt(
     cur_mask: torch.Tensor,
     X: torch.Tensor,
-    text_embeddings: torch.Tensor,
+    text_embeddings: list[torch.Tensor],
     step_size: float,
     iters: int,
     eps: float,
@@ -315,12 +316,10 @@ def disrupt(
     pipe: StableDiffusionInpaintPipeline,
     t_schedule: list[int],
     t_schedule_bound: int,
-    pixel_loss=False,
     loss_depth: list[int] = [64],
     loss_mask=False,
     infer_unet=None,
     grad_reps=5,
-    target_image=0,
     **kwargs
 ):
   X_adv = X.clone()
