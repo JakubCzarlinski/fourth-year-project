@@ -13,9 +13,7 @@ from diffusers import StableDiffusionInpaintPipeline
 import torchvision.transforms as T
 from typing import Union, List, Optional, Callable
 from utils import preprocess, prepare_mask_and_masked_image, recover_image, prepare_image
-from diff_jpeg import DiffJPEGCoding
-
-diff_jpeg_coding_module = DiffJPEGCoding()
+from xformers.ops import MemoryEfficientAttentionFlashAttentionOp
 
 to_pil = T.ToPILImage()
 
@@ -23,22 +21,26 @@ pipe_inpaint = StableDiffusionInpaintPipeline.from_pretrained(
     "runwayml/stable-diffusion-inpainting",
     torch_dtype=torch.float16,
 )
-
 pipe_inpaint = pipe_inpaint.to("cuda")
 
+# pipe_inpaint.enable_xformers_memory_efficient_attention(
+#     attention_op=MemoryEfficientAttentionFlashAttentionOp
+# )
+# pipe_inpaint.vae.enable_xformers_memory_efficient_attention(attention_op=None)
+pipe_inpaint = torch.compile(pipe_inpaint)
 
 target_url = "https://i.pinimg.com/originals/18/37/aa/1837aa6f2c357badf0f588916f3980bd.png"
 response = requests.get(target_url)
 target_image = Image.open(BytesIO(response.content)).convert("RGB")
-target_image = target_image.resize((400, 400))
+target_image = target_image.resize((512, 512))
 
 def attack_forward(
         self,
         prompt: Union[str, List[str]],
         masked_image: Union[torch.FloatTensor, Image.Image],
         mask: Union[torch.FloatTensor, Image.Image],
-        height: int = 400,
-        width: int = 400,
+        height: int = 512,
+        width: int = 512,
         num_inference_steps: int = 50,
         guidance_scale: float = 7.5,
         eta: float = 0.0,
@@ -51,7 +53,7 @@ def attack_forward(
             return_tensors="pt",
         )
         text_input_ids = text_inputs.input_ids
-        text_embeddings = self.text_encoder(text_input_ids.to(self.device))[0]
+        text_embeddings = self.text_encoder(text_input_ids.to("cuda"))[0]
 
         uncond_tokens = [""]
         max_length = text_input_ids.shape[-1]
@@ -62,7 +64,7 @@ def attack_forward(
             truncation=True,
             return_tensors="pt",
         )
-        uncond_embeddings = self.text_encoder(uncond_input.input_ids.to(self.device))[0]
+        uncond_embeddings = self.text_encoder(uncond_input.input_ids.to("cuda"))[0]
         seq_len = uncond_embeddings.shape[1]
         text_embeddings = torch.cat([uncond_embeddings, text_embeddings])
         
@@ -71,7 +73,7 @@ def attack_forward(
         num_channels_latents = self.vae.config.latent_channels
         
         latents_shape = (1 , num_channels_latents, height // 8, width // 8)
-        latents = torch.randn(latents_shape, device=self.device, dtype=text_embeddings.dtype)
+        latents = torch.randn(latents_shape, device="cuda", dtype=text_embeddings.dtype)
 
         mask = torch.nn.functional.interpolate(mask, size=(height // 8, width // 8))
         mask = torch.cat([mask] * 2)
@@ -83,7 +85,7 @@ def attack_forward(
         latents = latents * self.scheduler.init_noise_sigma
         
         self.scheduler.set_timesteps(num_inference_steps)
-        timesteps_tensor = self.scheduler.timesteps.to(self.device)
+        timesteps_tensor = self.scheduler.timesteps.to("cuda")
 
         for i, t in enumerate(timesteps_tensor):
             latent_model_input = torch.cat([latents] * 2)
@@ -104,18 +106,8 @@ def compute_grad(cur_mask, cur_masked_image, prompt, target_image, **kwargs):
     cur_masked_image = cur_masked_image.clone()
     cur_mask.requires_grad = False
     cur_masked_image.requires_grad_()
-
-    print(cur_masked_image.shape, type(cur_masked_image))
-    # cur_masked_image = cur_masked_image.squeeze(0)
-    jpeg_quality = torch.tensor([50]).to("cuda")
-    compressed_image = cur_masked_image.clone()
-    compressed_image = (compressed_image / 2 + 0.5).clamp(0, 1) * 255
-    compressed_image = diff_jpeg_coding_module(image_rgb=compressed_image, jpeg_quality=jpeg_quality).to("cuda")
-    compressed_image = ((compressed_image / 255 - 0.5) * 2).clamp(-1, 1).to(torch.float16)
-
-
     image_nat = attack_forward(pipe_inpaint,mask=cur_mask,
-                               masked_image=compressed_image,
+                               masked_image=cur_masked_image,
                                prompt=prompt,
                                **kwargs)
     
@@ -193,9 +185,9 @@ file_iteration_names = ["010"]
 
 for file_iteration in file_iteration_names:
 
-    init_image = Image.open(f'../images/{file_iteration}.png').convert('RGB').resize((400,400))
+    init_image = Image.open(f'../images/{file_iteration}.png').convert('RGB').resize((512,512))
     mask_image = Image.open(f'../images/{file_iteration}_masked.png').convert('RGB')
-    mask_image = ImageOps.invert(mask_image).resize((400,400))
+    mask_image = ImageOps.invert(mask_image).resize((512,512))
 
     cur_mask, cur_masked_image = prepare_mask_and_masked_image(init_image, mask_image)
 
@@ -204,87 +196,21 @@ for file_iteration in file_iteration_names:
     target_image_tensor = prepare_image(target_image)
     target_image_tensor = 0*target_image_tensor.cuda() # we can either attack towards a target image or simply the zero tensor
 
-    result, last_image= super_linf(cur_mask, cur_masked_image,
-                    prompt=prompt,
-                    target_image=target_image_tensor,
-                    eps=0.1,
-                    step_size=0.006,
-                    iters=200,
-                    clamp_min = -1,
-                    clamp_max = 1,
-                    height = 400,
-                    width = 400,
-                    eta=1,
-                    num_inference_steps=num_inference_steps,
-                    guidance_scale=guidance_scale,
-                    )
+    result, last_image= super_l2(cur_mask, cur_masked_image,
+                  prompt=prompt,
+                  target_image=target_image_tensor,
+                  eps=16,
+                  step_size=1,
+                  iters=200,
+                  clamp_min = -1,
+                  clamp_max = 1,
+                  eta=1,
+                  num_inference_steps=num_inference_steps,
+                  guidance_scale=guidance_scale,
+                  grad_reps=10
+                )
     adv_X = (result / 2 + 0.5).clamp(0, 1)
         
     adv_image = to_pil(adv_X[0]).convert("RGB")
     adv_image = recover_image(adv_image, init_image, mask_image, background=True)
-    adv_image
     adv_image.save(f'../adversarial/{file_iteration}_adv.png')
-
-# prompt = "man riding a motorcycle at night"
-# prompt = "two men in a wedding"
-# prompt = "two men in a restaurant hugging"
-# prompt = "two men in a classroom"
-# prompt = "two men in a library"
-# prompt = "two men in the plane hugging"
-
-
-# # A good seed
-# SEED = 9209
-
-# # Uncomment the below to generated other images
-# # SEED = np.random.randint(low=0, high=100000)
-# print(SEED)
-
-# torch.manual_seed(SEED)
-# strength = 0.7
-# guidance_scale = 7.5
-# num_inference_steps = 100
-
-# image_nat = pipe_inpaint(prompt=prompt, 
-#                      image=init_image, 
-#                      mask_image=mask_image, 
-#                      eta=1,
-#                      num_inference_steps=num_inference_steps,
-#                      guidance_scale=guidance_scale,
-#                      strength=strength
-#                     ).images[0]
-# print(image_nat)
-# image_nat = recover_image(image_nat.resize((400, 400)), init_image, mask_image)
-
-# torch.manual_seed(SEED)
-# image_adv = pipe_inpaint(prompt=prompt, 
-#                      image=adv_image, 
-#                      mask_image=mask_image, 
-#                      eta=1,
-#                      num_inference_steps=num_inference_steps,
-#                      guidance_scale=guidance_scale,
-#                      strength=strength
-#                     ).images[0]
-# image_adv = recover_image(image_adv.resize((400, 400)), init_image, mask_image)
-
-
-# fig, ax = plt.subplots(nrows=1, ncols=4, figsize=(20,6))
-
-# ax[0].imshow(init_image)
-# ax[1].imshow(adv_image)
-# ax[2].imshow(image_nat)
-# ax[3].imshow(image_adv)
-
-# ax[0].set_title('Source Image', fontsize=16)
-# ax[1].set_title('Adv Image', fontsize=16)
-# ax[2].set_title('Gen. Image Nat.', fontsize=16)
-# ax[3].set_title('Gen. Image Adv.', fontsize=16)
-
-# for i in range(4):
-#     ax[i].grid(False)
-#     ax[i].axis('off')
-    
-# fig.suptitle(f"{prompt} - {SEED}", fontsize=20)
-# fig.tight_layout()
-# plt.show()
-# plt.savefig('photoguard_larger.png')
