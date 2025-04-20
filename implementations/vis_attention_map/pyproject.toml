@@ -1,0 +1,17 @@
+[project]
+name = "vis-attention-map"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "accelerate>=1.6.0",
+    "bitsandbytes>=0.45.5",
+    "diffusers>=0.33.1",
+    "ipykernel>=6.29.5",
+    "ipywidgets>=8.1.6",
+    "matplotlib>=3.10.1",
+    "opencv-python>=4.11.0.86",
+    "torch>=2.6.0",
+    "transformers>=4.51.3",
+]
