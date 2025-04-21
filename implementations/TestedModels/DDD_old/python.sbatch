@@ -18,4 +18,4 @@ source /etc/profile.d/conda.sh
 ## Execute your program(s) ##
 module load CUDA
 conda activate group
-python3 attack.py
+python3 generation.py

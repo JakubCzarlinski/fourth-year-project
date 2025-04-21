@@ -1,30 +1,0 @@
-Loading pipeline components...:   0%|          | 0/6 [00:00<?, ?it/s]Loading pipeline components...: 100%|██████████| 6/6 [00:00<00:00, 21.67it/s]Loading pipeline components...: 100%|██████████| 6/6 [00:00<00:00, 21.65it/s]
-  0%|          | 0/250 [00:00<?, ?it/s]/dcs/21/u2102915/.local/lib/python3.12/site-packages/torch_dct/_dct.py:13: UserWarning: ComplexHalf support is experimental and many operators don't support it yet. (Triggered internally at ../aten/src/ATen/EmptyTensor.cpp:46.)
-  return torch.view_as_real(torch.fft.fft(v, dim=1))
-  0%|          | 0/250 [00:00<?, ?it/s]
-Traceback (most recent call last):
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/attack.py", line 415, in <module>
-    result, total_losses = ddd.disrupt(
-                           ^^^^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 400, in disrupt
-    c_grad, loss_value = get_grad(
-                         ^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 299, in get_grad
-    _image_nat, _latents = attack_forward(
-                           ^^^^^^^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 224, in attack_forward
-    self, latents = add_dft_noise(self, latents, text_embeddings, t, guidance_scale, mask, masked_image_latents)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 243, in add_dft_noise
-    latents_dct_noisy = self.scheduler.step(noise_pred_freq, t, latents).prev_sample
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102915/.conda/envs/group/lib/python3.12/site-packages/diffusers/schedulers/scheduling_pndm.py", line 257, in step
-    return self.step_plms(model_output=model_output, timestep=timestep, sample=sample, return_dict=return_dict)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102915/.conda/envs/group/lib/python3.12/site-packages/diffusers/schedulers/scheduling_pndm.py", line 382, in step_plms
-    prev_sample = self._get_prev_sample(sample, timestep, prev_timestep, model_output)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/21/u2102915/.conda/envs/group/lib/python3.12/site-packages/diffusers/schedulers/scheduling_pndm.py", line 418, in _get_prev_sample
-    alpha_prod_t = self.alphas_cumprod[timestep]
-                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
-IndexError: index 1444 is out of bounds for dimension 0 with size 1000

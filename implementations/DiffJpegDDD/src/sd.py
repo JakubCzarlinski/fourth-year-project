@@ -170,6 +170,8 @@ class Inference:
         fig.suptitle(f"{prompt} - {self.seed}", fontsize=20)
         fig.tight_layout()
 
+        os.makedirs(f"{self.testing_filename}/original", exist_ok=True)
+        image_nat.save(f"{self.testing_filename}/original/prompt{promptnum}.png")
         save_dirs = ["ddd_fast", "ddd_fast_compressed", "diffjpeg", "diffjpeg_compressed"]
         os.makedirs(f"{self.testing_filename}/{save_dirs[test-1]}", exist_ok=True)
         image_adv.save(f"{self.testing_filename}/{save_dirs[test-1]}/prompt{promptnum}.png")

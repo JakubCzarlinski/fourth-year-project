@@ -228,10 +228,7 @@ def attack_forward(
 
 
 def add_dft_noise(self, latents: torch.Tensor, text_embeddings: torch.Tensor, t, guidance_scale, mask, masked_image_latents) -> torch.Tensor:
-    latents_fft = torch.fft.fftshift(torch.fft.fft2(latents)) #dct.dct_2d(latents)
-    # text_fft = torch.fft.fftshift(torch.fft.fft2(text_embeddings))
-    # mask_fft = torch.fft.fftshift(torch.fft.fft2(mask))
-    # masked_latents_fft = torch.fft.fftshift(torch.fft.fft2(masked_image_latents))
+    latents_fft = torch.fft.fftshift(torch.fft.fft2(latents))
 
     noise_pred_freq = pred_noise(
         unet=self.unet,
@@ -246,8 +243,7 @@ def add_dft_noise(self, latents: torch.Tensor, text_embeddings: torch.Tensor, t,
     latents_dct_noisy = latents_fft + noise_pred_freq
 
     # Perform a 2D inverse DCT
-    latents_with_noise = torch.fft.ifft2(torch.fft.ifftshift(latents_dct_noisy)).real #dct.idct_2d(latents_dct_noisy)
-
+    latents_with_noise = torch.fft.ifft2(torch.fft.ifftshift(latents_dct_noisy)).real
     return latents_with_noise
 
 

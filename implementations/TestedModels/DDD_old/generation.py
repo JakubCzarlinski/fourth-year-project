@@ -44,10 +44,10 @@ file_iteration_names = [str(i) for i in range(1, 101) if i==2]
 
 for file_name in file_iteration_names:
 
-    init_image = Image.open(f'1_original.png').convert('RGB').resize((512,512))
+    init_image = Image.open(f'./dataset/{file_name}.png').convert('RGB').resize((512,512))
     mask_image = Image.open(f'./dataset/{file_name}_masked.png').convert('RGB')
     mask_image = ImageOps.invert(mask_image).resize((512,512))
-    adv_image =  Image.open(f'1_complex_defended.png')
+    adv_image =  Image.open(f'2_adv_compressed_30.png')
 
 
     prompts = ['change the background of the image to a beach']
@@ -87,8 +87,8 @@ for file_name in file_iteration_names:
 
             image_adv = recover_image(image_adv, init_image, mask_image)
 
-            image_adv.save(f'{file_name}_adv_inpaint.png')
-            image_nat.save(f'{file_name}_inpaint.png')
+            image_adv.save(f'{file_name}_adv_inpaint_compressed_39.png')
+            image_nat.save(f'{file_name}_inpaint_2.png')
 
 
             fig, ax = plt.subplots(nrows=1, ncols=4, figsize=(20,6))
