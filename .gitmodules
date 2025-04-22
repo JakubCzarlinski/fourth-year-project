@@ -1,0 +1,6 @@
+[submodule "fourth-year-project-dataset"]
+	path = fourth-year-project-dataset
+	url = https://github.com/Alf4ed/fourth-year-project-dataset.git
+[submodule "4th-Year-Project-Evaluations"]
+	path = 4th-Year-Project-Evaluations
+	url = https://github.com/NutellaSandwich/4th-Year-Project-Evaluations.git

@@ -1,21 +1,0 @@
-Loading pipeline components...:   0%|          | 0/6 [00:00<?, ?it/s]Loading pipeline components...:  17%|█▋        | 1/6 [00:00<00:00,  7.76it/s]Loading pipeline components...:  83%|████████▎ | 5/6 [00:02<00:00,  1.92it/s]Loading pipeline components...: 100%|██████████| 6/6 [00:02<00:00,  2.41it/s]
-  0%|          | 0/250 [00:00<?, ?it/s]/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py:231: UserWarning: ComplexHalf support is experimental and many operators don't support it yet. (Triggered internally at ../aten/src/ATen/EmptyTensor.cpp:46.)
-  latents_fft = torch.fft.fftshift(torch.fft.fft2(latents)) #dct.dct_2d(latents)
-  0%|          | 0/250 [00:00<?, ?it/s]
-Traceback (most recent call last):
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/attack.py", line 415, in <module>
-    result, total_losses = ddd.disrupt(
-                           ^^^^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 401, in disrupt
-    c_grad, loss_value = get_grad(
-                         ^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 300, in get_grad
-    _image_nat, _latents = attack_forward(
-                           ^^^^^^^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 224, in attack_forward
-    latents = add_dft_noise(self, latents, text_embeddings, t, guidance_scale, mask, masked_image_latents)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/dcs/large/u2102915/CS407/fourth-year-project/implementations/Model/ddd.py", line 232, in add_dft_noise
-    text_fft = torch.fft.fftshift(torch.fft.fft2(text_embeddings))
-                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-RuntimeError: cuFFT only supports dimensions whose sizes are powers of two when computing in half precision, but got a signal size of[77, 1024]
