@@ -4,7 +4,7 @@ import torchvision
 from PIL import Image, ImageOps
 from utils import prepare_masks, get_embeddings, process_images, load_images, text_embedding, pil_to_latent, recover_image, prepare_mask_and_masked, load_prompt
 from text_optimising import TextOptimizer, SemanticCentroids
-from ddd import disrupt
+from jrap import disrupt
 import torch
 import argparse
 import sys
@@ -44,7 +44,7 @@ args = dict_to_args_parser()
 
 device = "cuda"
 dtype = torch.float16
-ddd_args = {
+jrap_args = {
     "image_size": 512,
     "image_size_2d": (512, 512),
     "image_folder": "./tests/",
@@ -64,8 +64,8 @@ ddd_args = {
 }
 
 
-ddd_type = sys.argv[1]
-if ddd_type == "original":
+jrap_type = sys.argv[1]
+if jrap_type == "original":
    diffjpeg = False
 else:
    diffjpeg = True
@@ -75,11 +75,11 @@ experiment_explanation=sys.argv[3]
 
 
 for j,parameter in enumerate([p for i,p in enumerate(sys.argv[4:]) if i%2 ==0]):
-   if parameter in ddd_args:
-      ddd_args[parameter]=type(ddd_args[parameter])(sys.argv[2*j+5])
+   if parameter in jrap_args:
+      jrap_args[parameter]=type(jrap_args[parameter])(sys.argv[2*j+5])
       
 
-print(ddd_args)
+print(jrap_args)
 DCS = True
 username = "sneakers-pretrained-models"
 if DCS:
@@ -87,7 +87,7 @@ if DCS:
 else:
   models_path = None
 
-for filename in ddd_args["image_filenames"]:
+for filename in jrap_args["image_filenames"]:
     # Load Stable Diffusion Models
     inpaint_model = StableDiffusionInpaint(models_path=models_path)
     pipe_inpaint = inpaint_model.get_pipeline()
@@ -97,11 +97,11 @@ for filename in ddd_args["image_filenames"]:
     token_embedding = pipe_inpaint.text_encoder.text_model.embeddings.token_embedding
 
     # Load masked and original images.
-    original_image, masked_image_original, masked_image = load_images(ddd_args['image_folder'], filename, ddd_args["image_size_2d"])
+    original_image, masked_image_original, masked_image = load_images(jrap_args['image_folder'], filename, jrap_args["image_size_2d"])
 
     # Load token embeddings
     current_mask, current_masked_image = prepare_masks(original_image, masked_image)
-    all_latents, masked_image_latents, mask = process_images(pipe_inpaint, original_image, current_mask, current_masked_image, ddd_args["image_size"])
+    all_latents, masked_image_latents, mask = process_images(pipe_inpaint, original_image, current_mask, current_masked_image, jrap_args["image_size"])
     gt_embeddings, uncond_embeddings = get_embeddings(pipe_inpaint, filename)
 
     # Optimise text embeddings using Token Projective Embedding Optimisation
@@ -124,7 +124,7 @@ for filename in ddd_args["image_filenames"]:
     text_embeddings = text_embedding(pipe_inpaint, target_prompt)
 
     latents_shape = (
-        1, pipe_inpaint.vae.config.latent_channels, ddd_args["image_size"] // 8, ddd_args["image_size"] // 8
+        1, pipe_inpaint.vae.config.latent_channels, jrap_args["image_size"] // 8, jrap_args["image_size"] // 8
     )
 
     noise = torch.randn(latents_shape, device=device, dtype=text_embeddings.dtype)
@@ -140,10 +140,10 @@ for filename in ddd_args["image_filenames"]:
     current_mask = current_mask.to(dtype=dtype, device=device)
     current_masked_image = current_masked_image.to(dtype=dtype, device=device)
 
-    processor = SemanticCentroids(pipe_inpaint, device, dtype, ddd_args["image_size"], ddd_args["num_inference_steps"], input_text_embeddings)
-    attn_controller = processor.get_attention(current_mask, ddd_args["evaluation_metric"], ddd_args["loss_depth"])
+    processor = SemanticCentroids(pipe_inpaint, device, dtype, jrap_args["image_size"], jrap_args["num_inference_steps"], input_text_embeddings)
+    attn_controller = processor.get_attention(current_mask, jrap_args["evaluation_metric"], jrap_args["loss_depth"])
     processor.attention_processors(attn_controller)
-    text_embeddings = processor.generate_samples(current_mask, current_masked_image, ddd_args["t_schedule"], ddd_args["t_schedule_bound"], ddd_args["centroids_n_samples"], attn_controller)
+    text_embeddings = processor.generate_samples(current_mask, current_masked_image, jrap_args["t_schedule"], jrap_args["t_schedule_bound"], jrap_args["centroids_n_samples"], attn_controller)
 
     pipe_inpaint.text_encoder = pipe_inpaint.text_encoder.to(device="cpu")
     pipe_inpaint.vae.decoder = pipe_inpaint.vae.decoder.to(device="cpu")
@@ -155,18 +155,18 @@ for filename in ddd_args["image_filenames"]:
         current_mask,
         current_masked_image,
         text_embeddings=text_embeddings,
-        step_size=ddd_args["step_size"],
-        iters=ddd_args["iters"],
-        eps=ddd_args["eps"],
+        step_size=jrap_args["step_size"],
+        iters=jrap_args["iters"],
+        eps=jrap_args["eps"],
         clamp_min=-1,
         clamp_max=1,
         attn_controller=attn_controller,
         pipe=pipe_inpaint,
-        t_schedule=ddd_args["t_schedule"],
-        t_schedule_bound=ddd_args["t_schedule_bound"],
-        loss_depth=ddd_args["loss_depth"],
-        loss_mask=ddd_args["loss_mask"],
-        grad_reps=ddd_args["grad_reps"],
+        t_schedule=jrap_args["t_schedule"],
+        t_schedule_bound=jrap_args["t_schedule_bound"],
+        loss_depth=jrap_args["loss_depth"],
+        loss_mask=jrap_args["loss_mask"],
+        grad_reps=jrap_args["grad_reps"],
         diffjpeg=diffjpeg
     )
     experiment_filename = f"./Images/{experiment_name}/{filename}"
@@ -183,7 +183,7 @@ for filename in ddd_args["image_filenames"]:
        adv_image.save(f'{experiment_filename}/original_adversarial.png')
 
     # Inpainting Generation
-    inference = Inference(ddd_args["image_folder"], experiment_filename, filename, model_version, models_path, diffjpeg=diffjpeg)
+    inference = Inference(jrap_args["image_folder"], experiment_filename, filename, model_version, models_path, diffjpeg=diffjpeg)
     inference.infer_images()
 
 with open(f"./Images/{experiment_name}/explanation.txt", "w") as file:

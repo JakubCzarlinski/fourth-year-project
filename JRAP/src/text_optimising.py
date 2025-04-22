@@ -1,7 +1,7 @@
 from utils_text import initialize_prompt, nn_project, get_text_embedding_with_embeddings
 import torch
 import copy
-from ddd import AttnController, MyCrossAttnProcessor, get_random_t
+from jrap import AttnController, MyCrossAttnProcessor, get_random_t
 
 class TextOptimizer:
     def __init__(self, tokenizer, token_embedding, args, device, pipe_inpaint, all_latents, mask, masked_image_latents):
