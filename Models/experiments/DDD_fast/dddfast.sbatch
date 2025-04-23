@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#SBATCH --job-name=ddd-python # Job name for tracking
+#SBATCH --job-name=ddd-fast # Job name for tracking
 #SBATCH --partition=gecko     # Partition you wish to use (see above for list)
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16     # Number of CPU threads used by your job
@@ -14,6 +14,8 @@
 ## Initialisation ##
 source /etc/profile.d/modules.sh
 source /etc/profile.d/conda.sh
+
+mkdir -p sbatch
 
 ## Execute your program(s) ##
 module load CUDA

@@ -1,9 +1,9 @@
 #!/bin/bash
 #
-#SBATCH --job-name=jrap # Job name for tracking
+#SBATCH --job-name=ddd # Job name for tracking
 #SBATCH --partition=gecko     # Partition you wish to use (see above for list)
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=12     # Number of CPU threads used by your job
+#SBATCH --cpus-per-task=16     # Number of CPU threads used by your job
 #SBATCH --gres=gpu:1           # Number of GPUs to use 
 #SBATCH --time=2-00:00:00      # Job time limit set to 2 days (48 hours)
 #
@@ -20,7 +20,4 @@ mkdir -p sbatch
 ## Execute your program(s) ##
 module load CUDA
 conda activate group
-
-python3 ./src/attack_experimentation.py diffjpeg "Varying-step_size-on-best-model-188" "Using step size = init*(1/(1+iterations)) and reducing the number of iterations to 188"
-#e.g
-#python3 ./src/attack_experimentation.py diffjpeg "ArgumentChangeTest" "Testing that we edited arguments correctly" iters 50
+python3 generation.py

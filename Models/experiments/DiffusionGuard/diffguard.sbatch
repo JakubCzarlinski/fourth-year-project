@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#SBATCH --job-name=ddd-python # Job name for tracking
+#SBATCH --job-name=diffusionguard # Job name for tracking
 #SBATCH --partition=eagle     # Partition you wish to use (see above for list)
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=6     # Number of CPU threads used by your job
@@ -19,8 +19,6 @@ source /etc/profile.d/conda.sh
 module load CUDA
 conda activate group
 
-# python main.py --config-name diffusionguard orig_image_name='002.png' mask_image_names='["002_masked.png"]'
-# python main.py --config-name diffusionguard orig_image_name='003.png' mask_image_names='["003_masked.png"]'
-# python main.py --config-name diffusionguard orig_image_name='2.png' mask_image_names='["2_masked.png"]'
+mkdir -p sbatch
 
-python3 generation.py
+python main.py --config-name diffusionguard orig_image_name='2.png' mask_image_names='["2_masked.png"]'
