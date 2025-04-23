@@ -15,6 +15,8 @@
 source /etc/profile.d/modules.sh
 source /etc/profile.d/conda.sh
 
+mkdir -p sbatch
+
 ## Execute your program(s) ##
 module load CUDA
 conda activate group

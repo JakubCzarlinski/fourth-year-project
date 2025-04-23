@@ -31,6 +31,7 @@ class AttnController:
       criteria='MSE',
       target_depth=[256, 64]
   ) -> None:
+    # Initialise internal tacking variables
     self.attn_probs = []
     self.logs = []
     self.post = post
@@ -44,9 +45,9 @@ class AttnController:
     self.criteria_name = criteria
     self.target_depth = target_depth
     self.temp = 0.1
-    self.layer_weights = {4096:0.2, 1024:1, 1007:3, 256: 2, 64: 0.5}
+    self.layer_weights = {4096:0.2, 1024:1, 256: 2, 64: 0.5}
     self.l2weight = 0.1
-
+    # Set loss functions possible with newly created COS Normalised loss function.
     if criteria == 'MSE':
       self.criteria = nn.MSELoss()
     elif criteria == 'COS' or criteria == 'COS_NORMED':
@@ -65,6 +66,7 @@ class AttnController:
     self.target_hidden = None
 
   def register_mask(self, hidden_shape):
+    # Create and store interpolated mask for the given hidden shape
     if hidden_shape not in self.masks:
       w_h = torch.sqrt(torch.tensor([hidden_shape])).int().item()
 
@@ -72,13 +74,14 @@ class AttnController:
           self.masks["origin"], size=(w_h, w_h)
       )
       new_mask = new_mask.flatten().unsqueeze(0).unsqueeze(2)
-
+      # Avoid zero entries for cosine similarity
       if self.criteria_name == 'COS' or self.criteria_name == 'COS_NORMED':
         new_mask[new_mask == 0] = 0.01
 
       self.masks[hidden_shape] = new_mask
 
   def __call__(self, hidden, m_name):
+    # Collect hidden state pairs for training 
     if self.switch:
       hidden = hidden.clone()
 
@@ -97,7 +100,7 @@ class AttnController:
 
   @torch.compiler.disable
   def loss(self, loss_mask: bool, loss_depth: list[int] = [64]):
-
+    # Compute total loss over stored hidden states
     losses = 0
     cur_loss = 0
     if self.target_hidden is not None:
@@ -132,13 +135,15 @@ class AttnController:
 
       cur_loss += loss
       if i % 16 == 15:
-        cur_loss = 0
+        cur_loss = 0 # Reset loss log per set of iterations
+    # Reset stored data for next function call.
     self.sources = []
     self.targets = []
     self.m_name = []
     return losses
 
   def zero_attn_probs(self):
+    # Clear collected source and target hidden states
     self.sources = []
     self.targets = []
 
@@ -148,7 +153,7 @@ class MyCrossAttnProcessor:
   def __init__(
       self, attn_controller: "AttnController", module_name, post=False
   ) -> None:
-    self.attn_controller = attn_controller
+    self.attn_controller = attn_controller # External attention controller
     self.module_name = module_name
     self.post = False
 
@@ -159,6 +164,7 @@ class MyCrossAttnProcessor:
       encoder_hidden_states: torch.Tensor | None = None,
       attention_mask: torch.Tensor | None = None,
   ):
+    # Prepare for attention computation
     batch_size, sequence_length, _ = hidden_states.shape
     attention_mask = attn.prepare_attention_mask(
         attention_mask, sequence_length, batch_size=batch_size
@@ -167,27 +173,31 @@ class MyCrossAttnProcessor:
     if encoder_hidden_states is None:
       encoder_hidden_states = hidden_states
 
+    # Linear projection of query, key, and value
     query = attn.to_q(hidden_states)
     key = attn.to_k(encoder_hidden_states)
     value = attn.to_v(encoder_hidden_states)
 
-    # new
+    # Convert head to batch dimension
     query = attn.head_to_batch_dim(query).contiguous()
     key = attn.head_to_batch_dim(key).contiguous()
     value = attn.head_to_batch_dim(value).contiguous()
 
+    # Compute attention scores using memory efficient implementation.
     hidden_states = xops.memory_efficient_attention(
         query, key, value, attn_bias=attention_mask
     )
     hidden_states = attn.batch_to_head_dim(hidden_states)
-
+    # Output projection
     hidden_states = attn.to_out[0](hidden_states)
     hidden_states = attn.to_out[1](hidden_states)
-
+    
+    # Call attention controller for supervision
     self.attn_controller(hidden_states, self.module_name)
     return hidden_states
 
 def get_random_t(t_schedule, t_schedule_bound):
+  # Sample random timestep given a schedule with gaussian noise.
   result = np.empty((0), int)
   for i in t_schedule:
     cur_t = np.clip(
@@ -199,6 +209,7 @@ def get_random_t(t_schedule, t_schedule_bound):
 
 
 def get_random_emb(embs):
+  # Rnadomly pick a set of optimised text embeddings from the pool.
   rand_pos = np.random.randint(0, len(embs))
   return embs[rand_pos]
 
@@ -214,19 +225,24 @@ def attack_forward(
     guidance_scale: float = 7.5,
     eta: float = 0.0,
     random_t: torch.Tensor = None,
-):
+):  
+    # Forward pass for adversarial attack. This injects the noise using DiffJPEG and U-Net
+
+    # Generate initial latents
     latents_shape = (1, self.vae.config.latent_channels, height // 8, width // 8)
     latents = torch.randn(latents_shape, device=masked_image.device, dtype=text_embeddings.dtype)
     
     mask = torch.nn.functional.interpolate(mask, size=(height // 8, width // 8))
     mask = torch.cat([mask] * 2)
     
+    # Encode the masked image and the mask into latent space
     masked_image_latents = self.vae.encode(masked_image).latent_dist.sample()
     masked_image_latents *= 0.18215
     masked_image_latents = torch.cat([masked_image_latents] * 2)
     
     self.scheduler.set_timesteps(num_inference_steps)
     
+    # For a set timestep. Timestep: 720 +/- random integer between 0 and 6.
     for t in random_t:
         noise_pred_cfg, noise_pred_text, noise_pred_uncond = pred_noise(
             unet=self.unet,
@@ -250,16 +266,23 @@ def pred_noise(
     t: torch.Tensor,
     guidance_scale: float,
 ):
+  # Predice the noise using a U-Net conditioned and unconditioned on the text embeddings.
+
+
   latent_model_input = torch.cat([latents] * 2)
   latent_model_input = torch.cat(
       [latent_model_input, mask, masked_image_latents], dim=1
   )
+
+  # Forward pass through U-Net
   noise_pred = unet.forward(
       sample=latent_model_input,
       timestep=t,
       encoder_hidden_states=text_embeddings,
   ).sample
+  # Split into uncoditioned and conditioned predictions
   noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
+  # Apply guidance scale to the noise prediction
   noise_pred_cfg = noise_pred_uncond + guidance_scale * (
       noise_pred_text - noise_pred_uncond
   )
@@ -277,6 +300,7 @@ def get_gradient(
     quality = 4,
     diffjpeg: bool = True
 ):
+    # Compute gradient of attntion-based loss function with respect to the masked image.
     torch.set_grad_enabled(True)
     cur_mask.requires_grad = False
     cur_masked_image.requires_grad_()
@@ -285,6 +309,7 @@ def get_gradient(
     cur_mask.grad = None
     cur_masked_image.grad = None
     
+    # Apply Differentiable jpeg compression onto the masked image. Used compression to optimise gradient descent.
     if diffjpeg:
         compressed_image = apply_diffjpeg(cur_masked_image, quality)
     
@@ -303,12 +328,13 @@ def get_gradient(
               masked_image=cur_masked_image,
               random_t=random_t,
           )
-    
+    # Compute attention based loss function with gradients.
     loss_value = attn_controller.loss(loss_mask, loss_depth)
     grad = torch.autograd.grad(loss_value, [cur_masked_image])[0] * (1 - cur_mask)
     return grad, loss_value.item()
 
 def apply_diffjpeg(image, quality):
+    # Simulate JPEG compression using differentiable JPEG.
     jpeg_quality = torch.tensor([quality]).to(image.device)
     compressed_image = image.clone()
     compressed_image = (compressed_image / 2 + 0.5).clamp(0, 1) * 255
@@ -333,6 +359,7 @@ def disrupt(
     grad_reps=5,
     diffjpeg=False
 ):
+    # Main attack loop to create perturbation iteratively over multiple steps.
     X_adv = X.clone()
     iterator = tqdm(range(iters))
     total_losses = []
@@ -341,12 +368,13 @@ def disrupt(
     gen.manual_seed(1003)
     count = 0
     initital_step_size=150.0
+    # Iteratively generate adversarial perutrbations.
     for j in iterator:
         random_t = get_random_t(t_schedule, t_schedule_bound)
         all_grads, value_losses = [], []
         text_embed = get_random_emb(text_embeddings)
         
-        
+        # Repeat gradient computation for stability.
         for _ in range(grad_reps):
             np.random.seed(count)
             quality = (count + np.random.randint(-5,5)) % 80 + 20
@@ -367,6 +395,7 @@ def disrupt(
             value_losses.append(loss_value)
             attn_controller.zero_attn_probs()
 
+        # Compute the mean gradient and update the adversarial image.
         grad = torch.stack(all_grads).mean(dim=0)
         total_losses.append([np.mean(value_losses)])
         iterator.set_description_str(f'Loss: {total_losses[-1][0]:.5f}')
@@ -400,17 +429,21 @@ def grad_to_adv(
     x_dim: int,
     iteration: int,
 ):
+  # Projective gradient descent to create adversarial perturbation.
+
+  # Normalise the gradient
   grad_norm = torch.norm(
       grad.reshape(grad.shape[0], -1),
       dim=1,
   ).view(-1, *([1] * x_dim))
   grad_normalized = grad / (grad_norm + 1e-8)
 
+  # Apply learning rate schedule
   actual_step_size = step_size * (1 - iteration / iters)
   X_adv = X_adv - grad_normalized * actual_step_size
 
+  # Project perturbation to L2 ball or radius=eps
   d_x = X_adv - X.detach()
   d_x_norm = torch.renorm(d_x, p=2, dim=0, maxnorm=eps)
 
   return torch.clamp(X + d_x_norm, clamp_min, clamp_max)
-

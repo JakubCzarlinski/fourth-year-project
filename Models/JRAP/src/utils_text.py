@@ -27,7 +27,6 @@ def nn_project(curr_embeds, embedding_layer, print_hits=False):
 
     embedding_matrix = embedding_layer.weight
     embedding_matrix = normalize_embeddings(embedding_matrix)
-
     hits = semantic_search(
         curr_embeds,
         embedding_matrix,
@@ -41,7 +40,6 @@ def nn_project(curr_embeds, embedding_layer, print_hits=False):
       for hit in hits:
         all_hits.append(hit[0]["score"])
       print(f"mean hits:{mean(all_hits)}")
-
     nn_indices = torch.tensor(
         [hit[0]["corpus_id"] for hit in hits], device=curr_embeds.device
     )
@@ -50,52 +48,6 @@ def nn_project(curr_embeds, embedding_layer, print_hits=False):
     projected_embeds = embedding_layer(nn_indices)
 
   return projected_embeds, nn_indices
-
-def decode_ids(input_ids, tokenizer, by_token=False):
-  input_ids = input_ids.detach().cpu().numpy()
-
-  texts = []
-
-  if by_token:
-    for input_ids_i in input_ids:
-      curr_text = []
-      for tmp in input_ids_i:
-        curr_text.append(tokenizer.decode([tmp]))
-
-      texts.append('|'.join(curr_text))
-  else:
-    for input_ids_i in input_ids:
-      texts.append(tokenizer.decode(input_ids_i))
-
-  return texts
-
-
-def download_image(url):
-  try:
-    response = requests.get(url)
-  except:
-    return None
-  return Image.open(BytesIO(response.content)).convert("RGB")
-
-
-def get_target_feature(
-    model,
-    preprocess,
-    tokenizer_funct,
-    device,
-    target_images=None,
-    target_prompts=None
-):
-  if target_images is not None:
-    with torch.no_grad():
-      curr_images = [preprocess(i).unsqueeze(0) for i in target_images]
-      curr_images = torch.concatenate(curr_images).to(device)
-      all_target_features = model.encode_image(curr_images)
-  else:
-    texts = tokenizer_funct(target_prompts).to(device)
-    all_target_features = model.encode_text(texts)
-
-  return all_target_features
 
 
 def initialize_prompt(tokenizer, token_embedding, args, device):
@@ -133,6 +85,11 @@ def initialize_prompt(tokenizer, token_embedding, args, device):
 def get_text_embedding_with_embeddings(
     self, prompt_ids, prompt_embeddings, attention_mask=None
 ):
+  """
+  Get the text embedding for the given prompt ids and embeddings.
+  This function uses the text encoder to encode the prompt embeddings
+  and returns the text embeddings.
+  """
   text_embeddings = encode_embeddings(
       self,
       prompt_ids,
@@ -144,18 +101,25 @@ def get_text_embedding_with_embeddings(
 
 @torch.compile(backend="cudagraphs")
 def encode_embeddings(self, prompt, prompt_embeddings, attention_mask=None):
+  """
+  Encode the given prompt and prompt embeddings using text encoder
+  """
+
+  # Get the text encoder configuration
   output_attentions = self.text_encoder.text_model.config.output_attentions
   output_hidden_states = (
       self.text_encoder.text_model.config.output_hidden_states
   )
   return_dict = self.text_encoder.text_model.config.use_return_dict
 
+  # Get the text encoder embeddings
   hidden_states = self.text_encoder.text_model.embeddings(
       inputs_embeds=prompt_embeddings
   )
 
   bsz, seq_len = prompt.shape[0], prompt.shape[1]
 
+  # Get the attention mask
   causal_attention_mask = build_causal_attention_mask(
       bsz, seq_len, hidden_states.dtype, hidden_states.device
   )
@@ -166,6 +130,7 @@ def encode_embeddings(self, prompt, prompt_embeddings, attention_mask=None):
         attention_mask, hidden_states.dtype
     )
 
+  # Encode the prompt using the text encoder
   encoder_outputs = self.text_encoder.text_model.encoder(
       inputs_embeds=hidden_states,
       attention_mask=attention_mask,
@@ -179,14 +144,13 @@ def encode_embeddings(self, prompt, prompt_embeddings, attention_mask=None):
   last_hidden_state = self.text_encoder.text_model.final_layer_norm(
       last_hidden_state
   )
-
   pooled_output = last_hidden_state[
       torch.arange(last_hidden_state.shape[0], device=prompt.device),
       prompt.to(torch.int).argmax(dim=-1)]
 
   if not return_dict:
     return (last_hidden_state, pooled_output) + encoder_outputs[1:]
-
+  # Returns the hidden state and attention weights
   return BaseModelOutputWithPooling(
       last_hidden_state=last_hidden_state,
       pooler_output=pooled_output,

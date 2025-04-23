@@ -13,12 +13,20 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = dtype = torch.float16
     
 def prepare_masks(orig_images, mask_image):
+    """
+    Prepare the mask and masked image.
+    """
     cur_mask, cur_masked_image, init_image = prepare_mask_and_masked2(
         orig_images, mask_image, no_mask=False, inverted=True
     )
     return cur_mask.to(device, dtype), cur_masked_image.to(device, dtype)
 
 def process_images(pipe_inpaint, orig_images, cur_mask, cur_masked_image, size):
+    """
+    Preprocess the image and encode to latent space.
+
+    """
+    # Preprocess the image
     preprocess_transform = transforms.Compose(
         [
             transforms.Resize(
@@ -29,6 +37,7 @@ def process_images(pipe_inpaint, orig_images, cur_mask, cur_masked_image, size):
             transforms.ToTensor(),
         ]
     )
+    # Resize the image to correct size.
     with torch.no_grad():
         curr_images = preprocess_transform(orig_images).to(device)
         mask = F.interpolate(cur_mask, size=(size // 8, size // 8))
@@ -37,22 +46,25 @@ def process_images(pipe_inpaint, orig_images, cur_mask, cur_masked_image, size):
             curr_images = curr_images.unsqueeze(0)
         elif len(curr_images.shape) == 5:
             curr_images = curr_images.squeeze(0)
-        
+        # Encode the image to latent space
         all_latents = encode_latents(pipe_inpaint, curr_images)
         masked_image_latents = encode_latents(pipe_inpaint, cur_masked_image)
         
         return all_latents, masked_image_latents, mask
 
 def encode_latents(pipe_inpaint, image):
+    # Encode the image to latent space
     return pipe_inpaint.vae.encode(image.to(dtype)).latent_dist.sample() * 0.18215
 
 def get_embeddings(pipe_inpaint, testing_filename):
+    # Get the text embeddings
     gt_embeddings = get_text_embedding(pipe_inpaint, testing_filename)
     uncond_embeddings = get_text_embedding(pipe_inpaint, "")
     
     return gt_embeddings, uncond_embeddings
     
 def load_images(image_folder, filename, image_size_2d):
+  # Load the original image and the masked image
   original_image = Image.open(f"{image_folder}original/{filename}.png").convert('RGB').resize(image_size_2d)
   masked_image_original = Image.open(f"{image_folder}masks/{filename}_masked.png").convert('RGB').resize(image_size_2d)
   masked_image = ImageOps.invert(masked_image_original).resize(image_size_2d)
@@ -60,6 +72,7 @@ def load_images(image_folder, filename, image_size_2d):
 
 
 def pil_to_latent(pipe, input_im):
+  # Conver PIL image to latent space
   with torch.no_grad():
     latent = pipe.vae.encode(
         totensor(input_im).to(pipe.vae.dtype).unsqueeze(0).to(device) * 2 - 1
@@ -68,6 +81,8 @@ def pil_to_latent(pipe, input_im):
 
 
 def text_embedding(pipe, prompt):
+  # Get the text embedding
+  # Tokenize the prompt and get the text embeddings
   text_inputs = pipe.tokenizer(
       prompt,
       padding="max_length",
@@ -75,10 +90,12 @@ def text_embedding(pipe, prompt):
       return_tensors="pt",
   )
   text_input_ids = text_inputs.input_ids
+  # Get the text embeddings
   text_embeddings = pipe.text_encoder(text_input_ids.to(device))[0]
-
+  # Get the unconditioned embeddings
   uncond_tokens = [""]
   max_length = text_input_ids.shape[-1]
+  # Tokenize the unconditioned prompt
   uncond_input = pipe.tokenizer(
       uncond_tokens,
       padding="max_length",
@@ -86,6 +103,7 @@ def text_embedding(pipe, prompt):
       truncation=True,
       return_tensors="pt",
   )
+  # Get the unconditioned embeddings
   uncond_embeddings = pipe.text_encoder(uncond_input.input_ids.to(device))[0]
   seq_len = uncond_embeddings.shape[1]
 
@@ -108,7 +126,6 @@ def sample(
     current_t: int = None,
     all_latents=False
 ):
-
   mask = torch.nn.functional.interpolate(mask, size=(height // 8, width // 8))
   mask = torch.cat([mask] * 2)
 
@@ -118,9 +135,11 @@ def sample(
   if source_latent is not None:
     latents = source_latent
   latent_list = []
+  # For each timestep, sample the noise
   for i, t in enumerate(timesteps):
     #print(t)
     masked_image = masked_images[i][None]
+    # Encode to latent space
     masked_image_latents = self.vae.encode(masked_image).latent_dist.sample()
     masked_image_latents = 0.18215 * masked_image_latents
     masked_image_latents = torch.cat([masked_image_latents] * 2)
@@ -129,9 +148,11 @@ def sample(
     latent_model_input = torch.cat(
         [latent_model_input, mask, masked_image_latents], dim=1
     )
+    # Predict the noise
     noise_pred = self.unet(
         latent_model_input, t, encoder_hidden_states=text_embeddings
     ).sample
+    # Apply guidance scale to the noise prediction
     noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
     noise_pred = noise_pred_uncond + guidance_scale * (
         noise_pred_text - noise_pred_uncond
@@ -148,6 +169,7 @@ def sample(
 
 
 def recover_image(image, init_image, mask, background=False):
+  # Recover the image
   image = totensor(image)
   mask = totensor(mask)
   init_image = totensor(init_image)
@@ -157,21 +179,14 @@ def recover_image(image, init_image, mask, background=False):
     result = mask * image + (1 - mask) * init_image
   return topil(result)
 
-def preprocess(image):
-  w, h = image.size
-  w, h = map(lambda x: x - x % 32, (w, h))  # resize to integer multiple of 32
-  image = image.resize((w, h), resample=Image.LANCZOS)
-  image = np.array(image).astype(np.float32) / 255.0
-  image = image[None].transpose(0, 3, 1, 2)
-  image = torch.from_numpy(image)
-  return 2.0 * image - 1.0
-
 
 def prepare_mask_and_masked(image, mask):
+  """
+  Prepare the images.
+  """
   image = np.array(image.convert("RGB"))
   image = image[None].transpose(0, 3, 1, 2)
   image = torch.from_numpy(image).to(dtype=torch.float32) / 127.5 - 1.0
-
   mask = np.array(mask.convert("L"))
   mask = mask.astype(np.float32) / 255.0
   mask = mask[None, None]
@@ -184,20 +199,16 @@ def prepare_mask_and_masked(image, mask):
 
 
 def load_prompt(path):
+  # Load prompt from file
   prompts = []
   with open(path, 'r') as f:
     for line in f:
       prompts.append(line)
   return prompts
 
-def prepare_image(image):
-  image = np.array(image.convert("RGB"))
-  image = image[None].transpose(0, 3, 1, 2)
-  image = torch.from_numpy(image).to(dtype=torch.float32) / 127.5 - 1.0
-
-  return image[0]
-
 def get_text_embedding(self, prompt):
+  # Get the text embedding for the given prompt
+  # Tokenize the prompt and get the text embeddings
   text_input_ids = self.tokenizer(
       prompt,
       padding="max_length",
@@ -210,6 +221,7 @@ def get_text_embedding(self, prompt):
 
 
 def prepare_mask_and_masked2(image, mask, no_mask=False, inverted=False):
+  # Prepare the images.
   image = np.array(image.convert("RGB"))
   image = image[None].transpose(0, 3, 1, 2)
   image = torch.from_numpy(image).to(dtype=torch.float32) / 127.5 - 1.0

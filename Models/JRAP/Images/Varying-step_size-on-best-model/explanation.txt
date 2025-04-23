@@ -1,1 +1,0 @@
-Using step size = init*(1/(1+iterations)) and reducing the number of iterations to 164

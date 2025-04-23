@@ -37,17 +37,20 @@ args = dict_to_args_parser()
 
 device = "cuda"
 dtype = torch.float16
+
+# Hyperparameters for JRAP
+# The hyperparameters are set to the best values found.
 jrap_args = {
     "image_size": 512,
     "image_size_2d": (512, 512),
     "image_folder": "./tests/",
-    "image_filenames":["008"],
+    "image_filenames":["001"],
     "num_inference_steps": 4,
     "evaluation_metric": "COS_NORMED",
     "t_schedule": [720],
     "t_schedule_bound": 10,
     "centroids_n_samples": 50,
-    "loss_depth": [4096, 1024, 1007, 256, 64],
+    "loss_depth": [4096, 1024, 256, 64],
     "iters": 268,
     "grad_reps": 7,
     "loss_mask": True,
@@ -63,7 +66,7 @@ if jrap_type == "original":
 else:
    diffjpeg = True
 
-DCS = True
+DCS = False
 username = "sneakers-pretrained-models"
 if DCS:
   models_path = f"/dcs/large/{username}"
@@ -97,7 +100,7 @@ for filename in jrap_args["image_filenames"]:
     target_prompt = ""
     SEED = 786349
     torch.manual_seed(SEED)
-    
+    # Prepare the masked image and mask
     current_mask, current_masked_image = prepare_mask_and_masked(
         original_image, masked_image
     )
@@ -123,6 +126,7 @@ for filename in jrap_args["image_filenames"]:
     current_mask = current_mask.to(dtype=dtype, device=device)
     current_masked_image = current_masked_image.to(dtype=dtype, device=device)
 
+    # Use attention maps to find the semantic centroids of image.
     processor = SemanticCentroids(pipe_inpaint, device, dtype, jrap_args["image_size"], jrap_args["num_inference_steps"], input_text_embeddings)
     attn_controller = processor.get_attention(current_mask, jrap_args["evaluation_metric"], jrap_args["loss_depth"])
     processor.attention_processors(attn_controller)
@@ -132,7 +136,7 @@ for filename in jrap_args["image_filenames"]:
     pipe_inpaint.vae.decoder = pipe_inpaint.vae.decoder.to(device="cpu")
     pipe_inpaint.vae.post_quant_conv = pipe_inpaint.vae.post_quant_conv.to(device="cpu")
 
-    # Finding Adversarial Perturbation for disrupting Inpainting that is robust to Jpeg Compression.
+    # Finding Adversarial Perturbation for disrupting Inpainting that is robust to Jpeg Compression. This uses differentiable jpeg compression.
 
     result, total_losses = disrupt(
         current_mask,
@@ -162,10 +166,10 @@ for filename in jrap_args["image_filenames"]:
     experiment_filename = f"./Images/{filename}"
     os.makedirs(experiment_filename, exist_ok=True)
     if diffjpeg:
-       adv_image.save(f'{experiment_filename}/diffjpeg_adversarial.png')
+       adv_image.save(f'{experiment_filename}/jrap_adversarial.png')
     else:
        adv_image.save(f'{experiment_filename}/original_adversarial.png')
-    # Inpainting Generation
+    # Inpainting Generation based on provided prompts.
     inference = Inference(jrap_args["image_folder"], experiment_filename, filename, model_version, models_path, diffjpeg=diffjpeg)
     inference.infer_images()
 

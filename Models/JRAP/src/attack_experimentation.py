@@ -44,6 +44,9 @@ args = dict_to_args_parser()
 
 device = "cuda"
 dtype = torch.float16
+
+# Hyperparameters for JRAP
+# The hyperparameters are set to the best values found.
 jrap_args = {
     "image_size": 512,
     "image_size_2d": (512, 512),
@@ -54,8 +57,8 @@ jrap_args = {
     "t_schedule": [720],
     "t_schedule_bound": 10,
     "centroids_n_samples": 50,
-    "loss_depth": [4096, 1024, 1007, 256, 64],
-    "iters": 188,
+    "loss_depth": [4096, 1024, 256, 64],
+    "iters": 268,
     "grad_reps": 7,
     "loss_mask": True,
     "eps": 13,
@@ -115,6 +118,7 @@ for filename in jrap_args["image_filenames"]:
     SEED = 786349
     torch.manual_seed(SEED)
     
+    # Prepare the masked image and mask
     current_mask, current_masked_image = prepare_mask_and_masked(
         original_image, masked_image
     )
@@ -178,11 +182,11 @@ for filename in jrap_args["image_filenames"]:
     )
     os.makedirs(experiment_filename, exist_ok=True)
     if diffjpeg:
-       adv_image.save(f'{experiment_filename}/diffjpeg_adversarial.png')
+       adv_image.save(f'{experiment_filename}/jrap_adversarial.png')
     else:
        adv_image.save(f'{experiment_filename}/original_adversarial.png')
 
-    # Inpainting Generation
+    # Inpainting Generation based on provided prompts
     inference = Inference(jrap_args["image_folder"], experiment_filename, filename, model_version, models_path, diffjpeg=diffjpeg)
     inference.infer_images()
 

@@ -26,7 +26,7 @@ from torchvision import transforms
 import argparse
 from ddd import *
 
-
+# Define arguments for the optimization process
 args_dict = {
     "prompt_len": 16,
     "iter": 3000,
@@ -57,7 +57,6 @@ for file_iteration in file_iteration_names:
     # load img from img/{testimg_filename}.png, masked img is also required img/{testimg_filename}_masked.png
     testimg_filename = file_iteration
 
-    # model_version = "runwayml/stable-diffusion-inpainting"
     model_version = "stabilityai/stable-diffusion-2-inpainting"
 
     pipe_inpaint = StableDiffusionInpaintPipeline.from_pretrained(
