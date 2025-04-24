@@ -15,7 +15,6 @@ from torchmetrics.image.ssim import (
 from torchmetrics.image.ssim import StructuralSimilarityIndexMeasure as SSIM
 from torchvision import transforms
 from tqdm import tqdm
-import torch_dct as dct
 
 to_pil = transforms.ToPILImage()
 
@@ -157,7 +156,6 @@ class MyCrossAttnProcessor:
     # value = attn.head_to_batch_dim(value)
     # attention_probs = attn.get_attention_scores(query, key, attention_mask)
     # hidden_states = torch.bmm(attention_probs, value)
-
 
     # new
     query = attn.head_to_batch_dim(query).contiguous()
@@ -331,6 +329,8 @@ def disrupt(
   gen.manual_seed(1003)
 
   for j in iterator:
+    torch.compiler.cudagraph_mark_step_begin()
+
     if j in kwargs["inter_print"]:
       infer_dict = kwargs["infer_dict"]
       with torch.no_grad():
@@ -404,12 +404,13 @@ def disrupt(
         x_dim=x_dim,
         iteration=j,
     )
-
-  torch.cuda.empty_cache()
+  with torch.no_grad():
+    torch.cuda.empty_cache()
 
   return X_adv, total_losses
 
 
+@torch.compile(fullgraph=True, mode="reduce-overhead")
 def grad_to_adv(
     X: torch.Tensor,
     X_adv: torch.Tensor,

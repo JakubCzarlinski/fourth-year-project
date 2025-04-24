@@ -1,7 +1,7 @@
-from PIL import Image
 import numpy as np
 import torch
 import torchvision.transforms as T
+from PIL import Image
 
 totensor = T.ToTensor()
 topil = T.ToPILImage()
@@ -47,4 +47,3 @@ def prepare_image(image):
     image = torch.from_numpy(image).to(dtype=torch.float32) / 127.5 - 1.0
 
     return image[0]
- 

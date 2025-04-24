@@ -308,7 +308,7 @@ def get_text_embedding_with_embeddings(
   return text_embeddings[0]
 
 
-@torch.compile
+# @torch.compile
 def encode_embeddings(self, prompt, prompt_embeddings, attention_mask=None):
   output_attentions = self.text_encoder.text_model.config.output_attentions
   output_hidden_states = (
