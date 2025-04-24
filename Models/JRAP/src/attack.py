@@ -1,13 +1,24 @@
-from sd import StableDiffusionInpaint, Inference
-from torchvision import transforms
-from utils import prepare_masks, get_embeddings, process_images, load_images, text_embedding, pil_to_latent, recover_image, prepare_mask_and_masked, load_prompt
-from text_optimising import TextOptimizer, SemanticCentroids
-from jrap import disrupt
-import torch
 import argparse
-import sys
 import os
+import sys
+
+import torch
 from diff_jpeg import DiffJPEGCoding
+from jrap import disrupt
+from sd import Inference
+from sd import StableDiffusionInpaint
+from text_optimising import SemanticCentroids
+from text_optimising import TextOptimizer
+from torchvision import transforms
+from utils import get_embeddings
+from utils import load_images
+from utils import pil_to_latent
+from utils import prepare_mask_and_masked
+from utils import prepare_masks
+from utils import process_images
+from utils import recover_image
+from utils import text_embedding
+
 model_version = "stabilityai/stable-diffusion-2-inpainting"
 diff_jpeg_coding_module = DiffJPEGCoding()
 
@@ -172,5 +183,3 @@ for filename in jrap_args["image_filenames"]:
     # Inpainting Generation based on provided prompts.
     inference = Inference(jrap_args["image_folder"], experiment_filename, filename, model_version, models_path, diffjpeg=diffjpeg)
     inference.infer_images()
-
-    

@@ -1,0 +1,38 @@
+[project]
+name = "jrap"
+version = "1.0.0"
+description = "JRAP: JPEG Resistant Adversarial Perturbations to Disrupt Diffusion Based Inpainting"
+authors = [
+  { name = "Adith Jeyasangar", email = "Adith.Jeyasangar@warwick.ac.uk" },
+  { name = "James Nottingham", email = "James.Nottingham@warwick.ac.uk" },
+  { name = "Jakub Czarlinski", email = "Jakub.Czarlinski@warwick.ac.uk" },
+  { name = "Alfred Carpenter", email = "Alfred.Carpenter@warwick.ac.uk" },
+  { name = "Rohan Acharyac", email = "Rohan.Acharya@warwick.ac.uk" },
+  { name = "Rohit Ravichandran", email = "Rohit.Ravichandran@warwick.ac.uk" },
+]
+requires-python = ">=3.12"
+dependencies = [
+  "diffusers (>=0.33.1,<0.34.0)",
+  "transformers (>=4.51.3,<5.0.0)",
+  "accelerate (>=1.6.0,<2.0.0)",
+  "xformers (>=0.0.29.post3,<0.0.30)",
+  "bitsandbytes (>=0.45.5,<0.46.0)",
+  "pillow (>=11.2.1,<12.0.0)",
+  "matplotlib (>=3.10.1,<4.0.0)",
+  "torchmetrics (>=1.7.1,<2.0.0)",
+  "sentence-transformers (>=4.1.0,<5.0.0)",
+  "torch (==2.6.0)",
+  "torchvision (==0.21.0)",
+  "diff-jpeg @ git+https://github.com/necla-ml/Diff-JPEG",
+  "ipykernel (>=6.29.5,<7.0.0)",
+  "ipywidgets (>=8.1.6,<9.0.0)",
+  "kornia (>=0.8.0,<0.9.0)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false

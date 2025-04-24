@@ -1,15 +1,7 @@
 import copy
-import json
-import random
-from io import BytesIO
 from statistics import mean
-from typing import Any
 
-import numpy as np
-import open_clip
-import requests
 import torch
-from PIL import Image
 from sentence_transformers.util import dot_score
 from sentence_transformers.util import normalize_embeddings
 from sentence_transformers.util import semantic_search

@@ -1,11 +1,17 @@
+import os
+
+import matplotlib.pyplot as plt
 import torch
-from diffusers import StableDiffusionInpaintPipeline, UNet2DConditionModel, AutoencoderKL, BitsAndBytesConfig
-from PIL import Image, ImageOps
 import torchvision
 from diff_jpeg import DiffJPEGCoding
-import matplotlib.pyplot as plt
-import os
-from utils import load_prompt, recover_image
+from diffusers import AutoencoderKL
+from diffusers import BitsAndBytesConfig
+from diffusers import StableDiffusionInpaintPipeline
+from diffusers import UNet2DConditionModel
+from PIL import Image
+from PIL import ImageOps
+from utils import load_prompt
+from utils import recover_image
 
 # Load the DiffJPEG module
 diff_jpeg_coding_module = DiffJPEGCoding()
@@ -21,12 +27,12 @@ class StableDiffusionInpaint:
         self.dtype = torch.float16
         # Load models such as VAE, UNet, and StableDiffusionInpaintPipeline
         self.nf4_config = self._get_nf4()
-        
+
         self.unet = self._load_unet()
         self.vae = self._load_vae()
         self.pipe_inpaint = self._initialize_sd_pipeline()
         self._configure_pipeline()
-    
+
     def _get_nf4(self):
         """
         Get the configuration for 4-bit quantization using NF4 format."""
@@ -35,7 +41,7 @@ class StableDiffusionInpaint:
             bnb_4bit_quant_type="nf4",
             bnb_4bit_compute_dtype=self.dtype,
         )
-    
+
     def _load_unet(self):
         """
         Load the UNet model with 4 bit quantization.
@@ -48,7 +54,7 @@ class StableDiffusionInpaint:
             use_safetensors=True,
             cache_dir=self.models_path,
         )
-    
+
     def _load_vae(self):
         """
         Load the VAE model with 4 bit quantization.
@@ -61,7 +67,7 @@ class StableDiffusionInpaint:
             use_safetensors=True,
             cache_dir=self.models_path,
         )
-    
+
     def _initialize_sd_pipeline(self):
         """
         Initialise the stable diffusion pipeline with the UNet and VAE models.
@@ -75,7 +81,7 @@ class StableDiffusionInpaint:
             use_safetensors=True,
             cache_dir=self.models_path,
         )
-    
+
     def _configure_pipeline(self):
         """
         Configure the pipeline by moving the models to CUDA and setting the safety checker to None.
@@ -86,10 +92,10 @@ class StableDiffusionInpaint:
         self.pipe_inpaint.safety_checker = None
         self.pipe_inpaint.vae.requires_grad_(False)
         self.pipe_inpaint.unet.requires_grad_(False)
-    
+
     def get_pipeline(self):
         return self.pipe_inpaint
-    
+
 
 class Inference:
     """
@@ -136,7 +142,7 @@ class Inference:
         """
         Load the adversarial protected image based on if the DDD_fast or JRAP method is used.
         """
-        # Loads DDD_fast adversarial image without compression        
+        # Loads DDD_fast adversarial image without compression
         if test==1:
             return Image.open(f'{self.testing_filename}/original_adversarial.png').resize((512, 512))
         # Loads DDD_fast adversarial image with compression
@@ -175,7 +181,7 @@ class Inference:
             torch.manual_seed(self.seed)
             with torch.no_grad():
                 for promptnum, prompt in enumerate(prompts):
-                    print(self.seed)
+                    # print(self.seed)
                     torch.manual_seed(self.seed)
                     # Set predefined parameters for inpainting
                     strength, guidance_scale, num_inference_steps = 0.8, 7.5, 50

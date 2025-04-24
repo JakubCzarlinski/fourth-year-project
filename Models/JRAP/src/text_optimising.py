@@ -1,7 +1,13 @@
-from utils_text import initialize_prompt, nn_project, get_text_embedding_with_embeddings
-import torch
 import copy
-from jrap import AttnController, MyCrossAttnProcessor, get_random_t
+
+import torch
+from jrap import AttnController
+from jrap import MyCrossAttnProcessor
+from jrap import get_random_t
+from utils_text import get_text_embedding_with_embeddings
+from utils_text import initialize_prompt
+from utils_text import nn_project
+
 
 class TextOptimizer:
     """
@@ -32,7 +38,7 @@ class TextOptimizer:
         self.best_loss = -999
         self.best_text = ""
         self.best_embeds = None
-            
+
     def _update_learning_rate(self, step):
         """
         Update the learning rate based on the current step.
@@ -41,7 +47,7 @@ class TextOptimizer:
         """
         if step > self.args.opt_iters - 10:
             self.args.lr = 0.0001
-    
+
     def _prepare_embeddings(self, step):
         """
         Prepare the embeddings for this current step.
@@ -55,10 +61,10 @@ class TextOptimizer:
         else:
             tmp_embeds = copy.deepcopy(self.prompt_embeds)
             tmp_embeds.data = self.prompt_embeds.data
-        
+
         tmp_embeds.requires_grad = True
         return tmp_embeds
-    
+
     def _prepare_padded_embeddings(self, tmp_embeds):
         """
         Prepare the padded embeddings.
@@ -68,7 +74,7 @@ class TextOptimizer:
         padded_embeds = padded_embeds.repeat(self.args.batch_size, 1, 1)
         padded_dummy_ids = self.dummy_ids.repeat(self.args.batch_size, 1)
         return padded_embeds, padded_dummy_ids
-    
+
     def _select_latents(self):
         """
         Select the latents for the current step.
@@ -79,7 +85,7 @@ class TextOptimizer:
             perm = torch.randperm(len(self.all_latents))
             idx = perm[:self.args.batch_size]
             return self.all_latents[idx]
-    
+
     def _compute_loss(self, latents, padded_embeds, padded_dummy_ids):
         """
         Compute the loss based on the latents and the embeddings
@@ -88,13 +94,13 @@ class TextOptimizer:
         bsz = latents.shape[0]
         timesteps = torch.randint(0, 1000, (bsz,), device=latents.device).long()
         noisy_latents = self.pipe_inpaint.scheduler.add_noise(latents, noise, timesteps)
-        # Get the target 
+        # Get the target
         target = self._get_target(latents, noise, timesteps)
         # Get the text embeddings
         self.text_embeddings = get_text_embedding_with_embeddings(
             self.pipe_inpaint, padded_dummy_ids, padded_embeds
         )
-        
+
         input_latent = torch.cat([noisy_latents, self.mask, self.masked_image_latents], dim=1)
         # Get the model prediction using the U-Net
         model_pred = self.pipe_inpaint.unet.forward(
@@ -103,12 +109,12 @@ class TextOptimizer:
             encoder_hidden_states=self.text_embeddings,
             return_dict=False
         )[0]
-        
+
         target *= self.mask
         model_pred *= self.mask
         # Compute the loss
         return torch.nn.functional.mse_loss(model_pred.float(), target.float(), reduction="mean")
-    
+
     def _get_target(self, latents, noise, timesteps):
         """
         Build target based on the prediction type
@@ -133,7 +139,7 @@ class TextOptimizer:
             padded_embeds, padded_dummy_ids = self._prepare_padded_embeddings(tmp_embeds)
             latents = self._select_latents()
             loss = self._compute_loss(latents, padded_embeds, padded_dummy_ids)
-            
+
             self.prompt_embeds.grad, = torch.autograd.grad(loss, [tmp_embeds])
             self.input_optimizer.step()
             self.input_optimizer.zero_grad()
@@ -159,7 +165,7 @@ class SemanticCentroids:
         num_channels_latents = self.pipe_inpaint.vae.config.latent_channels
         latents_shape = (1, num_channels_latents, self.size // 8, self.size // 8)
         latents = torch.randn(latents_shape, device=self.device, dtype=self.input_text_embeddings.dtype)
-        
+
         mask = torch.nn.functional.interpolate(mask, size=(self.size // 8, self.size // 8))
         mask = torch.cat([mask] * 2)
         # Convert to the latent space
@@ -168,9 +174,9 @@ class SemanticCentroids:
         masked_image_latents = 0.18215 * masked_image_latents
         masked_image_latents = torch.cat([masked_image_latents] * 2)
 
-        
+
         return latents, mask, masked_image_latents
-    
+
     def _compute_mean(self, results, n_samples, attncontroller):
         # Compute the mean fo the results from the attention controller.
         means = [sum([results[idx][feature] for idx in range(n_samples)]) / n_samples for feature in range(len(results[0]))]
@@ -186,7 +192,7 @@ class SemanticCentroids:
                 criteria=loss_criteria,
                 target_depth=loss_depth
             )
-    
+
     def attention_processors(self, attncontroller):
         # Set the attention processor for the inpainting model
         module_count = 0

@@ -1,17 +1,24 @@
-from sd import StableDiffusionInpaint, Inference
-from torchvision import transforms
-import torchvision
-from PIL import Image, ImageOps
-from utils import prepare_masks, get_embeddings, process_images, load_images, text_embedding, pil_to_latent, recover_image, prepare_mask_and_masked, load_prompt
-from text_optimising import TextOptimizer, SemanticCentroids
-from jrap import disrupt
-import torch
 import argparse
-import sys
 import os
-import matplotlib.pyplot as plt
+import sys
+
+import torch
 from diff_jpeg import DiffJPEGCoding
-from diffusers import StableDiffusionInpaintPipeline
+from jrap import disrupt
+from sd import Inference
+from sd import StableDiffusionInpaint
+from text_optimising import SemanticCentroids
+from text_optimising import TextOptimizer
+from torchvision import transforms
+from utils import get_embeddings
+from utils import load_images
+from utils import pil_to_latent
+from utils import prepare_mask_and_masked
+from utils import prepare_masks
+from utils import process_images
+from utils import recover_image
+from utils import text_embedding
+
 model_version = "stabilityai/stable-diffusion-2-inpainting"
 diff_jpeg_coding_module = DiffJPEGCoding()
 
@@ -80,7 +87,7 @@ experiment_explanation=sys.argv[3]
 for j,parameter in enumerate([p for i,p in enumerate(sys.argv[4:]) if i%2 ==0]):
    if parameter in jrap_args:
       jrap_args[parameter]=type(jrap_args[parameter])(sys.argv[2*j+5])
-      
+
 
 print(jrap_args)
 DCS = True
@@ -117,7 +124,7 @@ for filename in jrap_args["image_filenames"]:
     target_prompt = ""
     SEED = 786349
     torch.manual_seed(SEED)
-    
+
     # Prepare the masked image and mask
     current_mask, current_masked_image = prepare_mask_and_masked(
         original_image, masked_image
@@ -192,4 +199,3 @@ for filename in jrap_args["image_filenames"]:
 
 with open(f"./Images/{experiment_name}/explanation.txt", "w") as file:
    file.write(experiment_explanation)
-

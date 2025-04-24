@@ -1,17 +1,16 @@
 import numpy as np
 import torch
-from PIL import Image, ImageOps
-from torchvision import transforms as tfms
-from torchvision import transforms
-from torchvision.utils import make_grid
-from torchvision.utils import save_image
 import torch.nn.functional as F
-totensor = tfms.ToTensor()
-topil = tfms.ToPILImage()
+from PIL import Image
+from PIL import ImageOps
+from torchvision import transforms
+
+totensor = transforms.ToTensor()
+topil = transforms.ToPILImage()
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = dtype = torch.float16
-    
+
 def prepare_masks(orig_images, mask_image):
     """
     Prepare the mask and masked image.
@@ -41,7 +40,7 @@ def process_images(pipe_inpaint, orig_images, cur_mask, cur_masked_image, size):
     with torch.no_grad():
         curr_images = preprocess_transform(orig_images).to(device)
         mask = F.interpolate(cur_mask, size=(size // 8, size // 8))
-        
+
         if len(curr_images.shape) == 3:
             curr_images = curr_images.unsqueeze(0)
         elif len(curr_images.shape) == 5:
@@ -49,7 +48,7 @@ def process_images(pipe_inpaint, orig_images, cur_mask, cur_masked_image, size):
         # Encode the image to latent space
         all_latents = encode_latents(pipe_inpaint, curr_images)
         masked_image_latents = encode_latents(pipe_inpaint, cur_masked_image)
-        
+
         return all_latents, masked_image_latents, mask
 
 def encode_latents(pipe_inpaint, image):
@@ -60,9 +59,9 @@ def get_embeddings(pipe_inpaint, testing_filename):
     # Get the text embeddings
     gt_embeddings = get_text_embedding(pipe_inpaint, testing_filename)
     uncond_embeddings = get_text_embedding(pipe_inpaint, "")
-    
+
     return gt_embeddings, uncond_embeddings
-    
+
 def load_images(image_folder, filename, image_size_2d):
   # Load the original image and the masked image
   original_image = Image.open(f"{image_folder}original/{filename}.png").convert('RGB').resize(image_size_2d)

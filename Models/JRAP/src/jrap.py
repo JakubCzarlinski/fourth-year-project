@@ -2,8 +2,8 @@ from typing import Union
 
 import numpy as np
 import torch
-import utils
 import xformers.ops as xops
+from diff_jpeg import DiffJPEGCoding
 from diffusers import StableDiffusionInpaintPipeline
 from diffusers import UNet2DConditionModel
 from diffusers.models.attention import Attention
@@ -15,11 +15,9 @@ from torchmetrics.image.ssim import (
 from torchmetrics.image.ssim import StructuralSimilarityIndexMeasure as SSIM
 from torchvision import transforms
 from tqdm import tqdm
-import random
-to_pil = transforms.ToPILImage()
-from diff_jpeg import DiffJPEGCoding
-diff_jpeg_coding_module = DiffJPEGCoding()
 
+to_pil = transforms.ToPILImage()
+diff_jpeg_coding_module = DiffJPEGCoding()
 
 class AttnController:
 
@@ -81,7 +79,7 @@ class AttnController:
       self.masks[hidden_shape] = new_mask
 
   def __call__(self, hidden, m_name):
-    # Collect hidden state pairs for training 
+    # Collect hidden state pairs for training
     if self.switch:
       hidden = hidden.clone()
 
@@ -110,7 +108,7 @@ class AttnController:
 
     for i, (a, b) in enumerate(zip(source, self.targets)):
       ba, h, c = a.shape
-      print(h)
+      # print(h)
       loss = 0
       if loss_mask:
         if self.criteria_name == 'COS_NORMED':
@@ -128,7 +126,7 @@ class AttnController:
             loss = self.layer_weights[h] * (cos_loss + regularizer)
         # loss = cos_loss + regularizer
           else:
-            loss = -self.criteria(a_normed.detach(), b_normed)     
+            loss = -self.criteria(a_normed.detach(), b_normed)
         else:
           loss = -self.criteria(a.detach(), b)
         losses += loss
@@ -191,7 +189,7 @@ class MyCrossAttnProcessor:
     # Output projection
     hidden_states = attn.to_out[0](hidden_states)
     hidden_states = attn.to_out[1](hidden_states)
-    
+
     # Call attention controller for supervision
     self.attn_controller(hidden_states, self.module_name)
     return hidden_states
@@ -225,23 +223,23 @@ def attack_forward(
     guidance_scale: float = 7.5,
     eta: float = 0.0,
     random_t: torch.Tensor = None,
-):  
+):
     # Forward pass for adversarial attack. This injects the noise using DiffJPEG and U-Net
 
     # Generate initial latents
     latents_shape = (1, self.vae.config.latent_channels, height // 8, width // 8)
     latents = torch.randn(latents_shape, device=masked_image.device, dtype=text_embeddings.dtype)
-    
+
     mask = torch.nn.functional.interpolate(mask, size=(height // 8, width // 8))
     mask = torch.cat([mask] * 2)
-    
+
     # Encode the masked image and the mask into latent space
     masked_image_latents = self.vae.encode(masked_image).latent_dist.sample()
     masked_image_latents *= 0.18215
     masked_image_latents = torch.cat([masked_image_latents] * 2)
-    
+
     self.scheduler.set_timesteps(num_inference_steps)
-    
+
     # For a set timestep. Timestep: 720 +/- random integer between 0 and 6.
     for t in random_t:
         noise_pred_cfg, noise_pred_text, noise_pred_uncond = pred_noise(
@@ -308,11 +306,11 @@ def get_gradient(
     # Zero the gradients
     cur_mask.grad = None
     cur_masked_image.grad = None
-    
+
     # Apply Differentiable jpeg compression onto the masked image. Used compression to optimise gradient descent.
     if diffjpeg:
         compressed_image = apply_diffjpeg(cur_masked_image, quality)
-    
+
         _image_nat, _latents = attack_forward(
             pipe,
             text_embeddings=text_embeddings,
@@ -370,25 +368,27 @@ def disrupt(
     initital_step_size=150.0
     # Iteratively generate adversarial perutrbations.
     for j in iterator:
+        torch.compiler.cudagraph_mark_step_begin()
+
         random_t = get_random_t(t_schedule, t_schedule_bound)
         all_grads, value_losses = [], []
         text_embed = get_random_emb(text_embeddings)
-        
+
         # Repeat gradient computation for stability.
         for _ in range(grad_reps):
             np.random.seed(count)
             quality = (count + np.random.randint(-5,5)) % 80 + 20
             count += 1
             c_grad, loss_value = get_gradient(
-                cur_mask, 
-                X_adv, 
-                text_embed, 
-                pipe, 
-                attn_controller, 
-                loss_depth, 
-                loss_mask, 
-                random_t, 
-                quality, 
+                cur_mask,
+                X_adv,
+                text_embed,
+                pipe,
+                attn_controller,
+                loss_depth,
+                loss_mask,
+                random_t,
+                quality,
                 diffjpeg
             )
             all_grads.append(c_grad.detach())
