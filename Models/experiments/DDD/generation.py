@@ -44,10 +44,10 @@ file_iteration_names = [str(i) for i in range(1, 101) if i==2]
 
 for file_name in file_iteration_names:
 
-    init_image = Image.open(f'./dataset/{file_name}.png').convert('RGB').resize((512,512))
-    mask_image = Image.open(f'./dataset/{file_name}_masked.png').convert('RGB')
+    init_image = Image.open(f'./images/{file_name}.png').convert('RGB').resize((512,512))
+    mask_image = Image.open(f'./images/{file_name}_masked.png').convert('RGB')
     mask_image = ImageOps.invert(mask_image).resize((512,512))
-    adv_image =  Image.open(f'2_adv_compressed_30.png')
+    adv_image =  Image.open(f'images_adv/{file_name}_adv.png')
 
 
     prompts = ['change the background of the image to a beach']

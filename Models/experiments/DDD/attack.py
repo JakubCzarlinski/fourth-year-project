@@ -51,11 +51,10 @@ def dict_to_args_parser(input_dict):
 args = dict_to_args_parser(args_dict)
 
 from ddd import *
-file_iteration_names = [str(i) for i in range(36, 101) if i!=36 and i!=86]
+file_iteration_names = ["001"]
 
 for file_iteration in file_iteration_names:
-    # load img from img/{testimg_filename}.png, masked img is also required img/{testimg_filename}_masked.png
-    testimg_filename = file_iteration
+    testing_filename = file_iteration
 
     model_version = "stabilityai/stable-diffusion-2-inpainting"
 
@@ -87,12 +86,10 @@ for file_iteration in file_iteration_names:
 
     pipe_inpaint.to(torch_dtype=torch.float32)
 
-    orig_images = Image.open(f'./images/{testimg_filename}.png').convert('RGB').resize((512,512))
-    mask_image_orig = Image.open(f'./images/{testimg_filename}_masked.png').convert('RGB').resize((512,512))
+    orig_images = Image.open(f'./images/{testing_filename}.png').convert('RGB').resize((512,512))
+    mask_image_orig = Image.open(f'./images/{testing_filename}_masked.png').convert('RGB').resize((512,512))
     mask_image = ImageOps.invert(mask_image_orig).resize((512,512))
-    # mask_image = ImageOps.invert(mask_image).resize((512,512))
 
-    # mask_image.show()
     cur_mask, cur_masked_image, init_image = prepare_mask_and_masked2(orig_images, mask_image, no_mask=False,inverted=True)
     inv_cur_mask, _, _ = prepare_mask_and_masked2(orig_images, mask_image, no_mask=False,inverted=False)
 
@@ -109,14 +106,13 @@ for file_iteration in file_iteration_names:
         all_latents = pipe_inpaint.vae.encode(curr_images.to(weight_dtype)).latent_dist.sample()
         all_latents = all_latents * 0.18215
         masked_image_latents = pipe_inpaint.vae.encode(cur_masked_image).latent_dist.sample() * 0.18215
-        gt_embeddings = get_text_embedding(pipe_inpaint,testimg_filename)
+        gt_embeddings = get_text_embedding(pipe_inpaint,testing_filename)
         uncond_embeddings = get_text_embedding(pipe_inpaint,"")
 
 
     args.prompt_len = 8
     args.opt_iters = 350
     args.eval_step = 50
-    # discrete = True
     args.lr = 0.0001
 
     args.lr = 0.001
@@ -185,9 +181,9 @@ for file_iteration in file_iteration_names:
 
     pipe_inpaint.to(torch_dtype=torch.float16)
 
-    # for testimg_filename in test_file_list:
-    init_image = Image.open(f'./images/{testimg_filename}.png').convert('RGB').resize((512,512))
-    mask_image = Image.open(f'./images/{testimg_filename}_masked.png').convert('RGB')
+    # for testing_filename in test_file_list:
+    init_image = Image.open(f'./images/{testing_filename}.png').convert('RGB').resize((512,512))
+    mask_image = Image.open(f'./images/{testing_filename}_masked.png').convert('RGB')
     mask_image = ImageOps.invert(mask_image).resize((512,512))
 
 
@@ -302,7 +298,7 @@ for file_iteration in file_iteration_names:
 
 
     infer_dict = dict()
-    infer_dict["prompt"] = "" #load_prompt(f"prompts/{testimg_filename}.txt")[0]
+    infer_dict["prompt"] = "" #load_prompt(f"prompts/{testing_filename}.txt")[0]
     infer_dict["num_inference_steps"] = 20
     infer_dict["guidance_scale"] = 7.5
     infer_dict["strength"] = 0.8
@@ -365,9 +361,9 @@ for file_iteration in file_iteration_names:
     adv_image = recover_image(adv_image, init_image, mask_image,background=True)
     # adv_image.show()
 
-    adv_image.save(f'./images_adv/{testimg_filename}_adv.png')
+    adv_image.save(f'./images_adv/{testing_filename}_adv.png')
 
-    # prompts = load_prompt(f"prompts/{testimg_filename}.txt")
+    # prompts = load_prompt(f"prompts/{testing_filename}.txt")
 
     # SEED = 1007
 

@@ -176,7 +176,7 @@ strength = 0.7
 guidance_scale = 7.5
 num_inference_steps = 4
 
-file_iteration_names = ["010"]
+file_iteration_names = ["001"]
 
 for file_iteration in file_iteration_names:
 
