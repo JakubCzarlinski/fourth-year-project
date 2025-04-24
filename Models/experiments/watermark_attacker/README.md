@@ -6,6 +6,8 @@ Jakub: This has been modified to work with Stable Diffusion 3. This created
 breaking changes for running the code. To run the original code, clone the
 original repository.
 
+---
+
 [Update] The paper is accepted by NeurIPS 2024!
 
 ## **Welcome to contribute to this project!**

@@ -1,14 +1,20 @@
+# DiffusionGuard
+
+Original repo: [https://github.com/choi403/DiffusionGuard]
+
 ## Introduction
 
 This is the official repo of the paper ["DiffusionGuard: A Robust Defense Against Malicious Diffusion-based Image Editing"](https://arxiv.org/abs/2410.05694) (ICLR 2025)
 
 ## Contents
 
-- [Introduction](#introduction)
-- [Installation](#installation)
-  - [Python environments](#python-environments)
-- [Protecting images against inpainting](#protecting-images-against-inpainting)
-- [Configuration](#configuration)
+- [DiffusionGuard](#diffusionguard)
+  - [Introduction](#introduction)
+  - [Contents](#contents)
+  - [Installation](#installation)
+    - [Python environments](#python-environments)
+  - [Protecting images against inpainting](#protecting-images-against-inpainting)
+    - [Configuration](#configuration)
 
 ## Installation
 
