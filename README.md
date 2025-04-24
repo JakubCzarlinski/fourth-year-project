@@ -1,4 +1,10 @@
-# Fourth Year Project
+# JRAP: JPEG Resistant Adversarial Perturbations to Disrupt Diffusion Based Inpainting
+
+A minimal reproduction can be found at [https://github.com/JakubCzarlinski/fourth-year-project/blob/main/Models/JRAP/src/example.ipynb].
+
+![Example Disruption](https://raw.githubusercontent.com/JakubCzarlinski/fourth-year-project/refs/heads/main/Models/JRAP/Images/011/jrap_compressed/result_prompt2.png)
+![Example Disruption](https://raw.githubusercontent.com/JakubCzarlinski/fourth-year-project/refs/heads/main/Models/JRAP/Images/004/jrap_compressed/result_prompt1.png)
+![Example Disruption](https://raw.githubusercontent.com/JakubCzarlinski/fourth-year-project/refs/heads/main/Models/JRAP/Images/001/jrap_compressed/result_prompt4.png)
 
 ## Overview
 
@@ -18,6 +24,7 @@ This repository has 2 repositories as submodules:
 
 #### Requirements
 
+- Linux
 - Anaconda
 - Python 3.12
 - GPU with 24GB of memory or more. The GPU must support CUDA 11.8 or higher. A
