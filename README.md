@@ -57,11 +57,13 @@ This repository has 2 repositories as submodules:
     ```bash
     conda create --name group python=3.12
     conda activate group
-    pip install poetry
     ```
 
 4. Install dependencies:
-
+    ```
+    pip install requirements.txt
+    ```
+    or If you have poetry installed
     ```bash
     cd ./Models/JRAP
     poetry install
