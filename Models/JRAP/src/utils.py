@@ -9,7 +9,7 @@ totensor = transforms.ToTensor()
 topil = transforms.ToPILImage()
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-dtype = dtype = torch.float16
+dtype = torch.float16
 
 def prepare_masks(orig_images, mask_image):
     """
