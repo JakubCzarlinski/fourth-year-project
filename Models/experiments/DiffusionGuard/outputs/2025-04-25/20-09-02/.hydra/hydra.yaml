@@ -142,7 +142,7 @@ hydra:
     - path: ''
       schema: structured
       provider: schema
-    output_dir: /dcs/large/u2102915/CS407/fourth-year-project/Models/experiments/DiffusionGuard/outputs/2025-04-24/01-36-43
+    output_dir: /dcs/large/u2102915/CS407/fourth-year-project/Models/experiments/DiffusionGuard/outputs/2025-04-25/20-09-02
     choices:
       hydra/env: default
       hydra/callbacks: null

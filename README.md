@@ -124,6 +124,7 @@ they meet the recommended hardware requirements.
 ```bash
 ssh kudu
 cd path/to/fourth-year-project/Models/JRAP/
+mkdir sbatch
 sbatch jrap.sbatch
 ```
 
