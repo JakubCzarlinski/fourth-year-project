@@ -18,7 +18,7 @@ This repository has 2 repositories as submodules:
 - Project Evaluation Code:
   [https://github.com/NutellaSandwich/4th-Year-Project-Evaluations/tree/main](https://github.com/NutellaSandwich/4th-Year-Project-Evaluations/tree/main)
 - Project Dataset:
-  [https://github.com/Alf4ed/fourth-year-project-dataset/tree/main](https://github.com/Alf4ed/fourth-year-project-dataset/tree/main)
+  [https://github.com/Alf4ed/People250/tree/main](https://github.com/Alf4ed/People250/tree/main)
 
 ### Installation
 
