@@ -1,9 +1,8 @@
 #!/bin/bash
 #
 #SBATCH --job-name=jrap # Job name for tracking
-#SBATCH --partition=gecko,falcon     # Partition you wish to use (see above for list)
+#SBATCH --partition=gecko,falcon,eagle     # Partition you wish to use (see above for list)
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=10     # Number of CPU threads used by your job
 #SBATCH --gres=gpu:1           # Number of GPUs to use 
 #SBATCH --time=2-00:00:00      # Job time limit set to 2 days (48 hours)
 #
