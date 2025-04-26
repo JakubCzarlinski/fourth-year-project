@@ -29,7 +29,7 @@ class AttnController:
       criteria='MSE',
       target_depth=[256, 64]
   ) -> None:
-    # Initialise internal tacking variables
+    # Initialise internal tracking variables
     self.attn_probs = []
     self.logs = []
     self.post = post
@@ -278,7 +278,7 @@ def pred_noise(
       timestep=t,
       encoder_hidden_states=text_embeddings,
   ).sample
-  # Split into uncoditioned and conditioned predictions
+  # Split into unconditioned and conditioned predictions
   noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
   # Apply guidance scale to the noise prediction
   noise_pred_cfg = noise_pred_uncond + guidance_scale * (
@@ -298,7 +298,7 @@ def get_gradient(
     quality = 4,
     diffjpeg: bool = True
 ):
-    # Compute gradient of attntion-based loss function with respect to the masked image.
+    # Compute gradient of attention-based loss function with respect to the masked image.
     torch.set_grad_enabled(True)
     cur_mask.requires_grad = False
     cur_masked_image.requires_grad_()
@@ -366,7 +366,7 @@ def disrupt(
     gen.manual_seed(1003)
     count = 0
     initital_step_size=150.0
-    # Iteratively generate adversarial perutrbations.
+    # Iteratively generate adversarial perturbations.
     for j in iterator:
         torch.compiler.cudagraph_mark_step_begin()
 
