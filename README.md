@@ -1,17 +1,17 @@
 # JRAP: JPEG Resistant Adversarial Perturbations to Disrupt Diffusion Based Inpainting
 
-A minimal reproduction can be found at [https://github.com/JakubCzarlinski/fourth-year-project/blob/main/Models/JRAP/src/example.ipynb].
+A minimal reproduction can be found at [https://github.com/JakubCzarlinski/jrap/blob/main/Models/JRAP/src/example.ipynb].
 
-![Example Disruption](https://raw.githubusercontent.com/JakubCzarlinski/fourth-year-project/refs/heads/main/Models/JRAP/Images/011/jrap_compressed/result_prompt2.png)
-![Example Disruption](https://raw.githubusercontent.com/JakubCzarlinski/fourth-year-project/refs/heads/main/Models/JRAP/Images/004/jrap_compressed/result_prompt1.png)
-![Example Disruption](https://raw.githubusercontent.com/JakubCzarlinski/fourth-year-project/refs/heads/main/Models/JRAP/Images/001/jrap_compressed/result_prompt4.png)
+![Example Disruption](https://raw.githubusercontent.com/JakubCzarlinski/jrap/refs/heads/main/Models/JRAP/Images/011/jrap_compressed/result_prompt2.png)
+![Example Disruption](https://raw.githubusercontent.com/JakubCzarlinski/jrap/refs/heads/main/Models/JRAP/Images/004/jrap_compressed/result_prompt1.png)
+![Example Disruption](https://raw.githubusercontent.com/JakubCzarlinski/jrap/refs/heads/main/Models/JRAP/Images/001/jrap_compressed/result_prompt4.png)
 
 ## Overview
 
 We have 3 publicly accessible Github repositories.
 
 - The main repository:
-[https://github.com/JakubCzarlinski/fourth-year-project](https://github.com/JakubCzarlinski/fourth-year-project)
+[https://github.com/JakubCzarlinski/jrap](https://github.com/JakubCzarlinski/jrap)
 
 This repository has 2 repositories as submodules:
 
@@ -36,20 +36,20 @@ This repository has 2 repositories as submodules:
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/JakubCzarlinski/fourth-year-project.git
+   git clone https://github.com/JakubCzarlinski/jrap.git
    ```
 
    If you want access to our submodules such as our Evaluation and dataset
    repositories run:
 
    ```bash
-   git clone --recurse-submodules https://github.com/JakubCzarlinski/fourth-year-project.git
+   git clone --recurse-submodules https://github.com/JakubCzarlinski/jrap.git
    ```
 
 2. Navigate to the project directory:
 
    ```bash
-   cd fourth-year-project
+   cd jrap
    ```
 
 3. Set up a virtual environment:
@@ -81,13 +81,13 @@ the project directory:
 
 ```bash
 ssh kudu
-cd path/to/fourth-year-project/
+cd path/to/jrap/
 ```
 
 ### Directory Structure
 
 ```txt
-fourth-year-project
+jrap
 ├── Models
 │   ├── JRAP
 │   └── experiments
@@ -123,7 +123,7 @@ they meet the recommended hardware requirements.
 
 ```bash
 ssh kudu
-cd path/to/fourth-year-project/Models/JRAP/
+cd path/to/jrap/Models/JRAP/
 mkdir sbatch
 sbatch jrap.sbatch
 ```
