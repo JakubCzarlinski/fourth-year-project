@@ -27,7 +27,7 @@ This repository has 2 repositories as submodules:
 - Linux
 - Anaconda
 - Python 3.12
-- GPU with 24GB of memory or more. The GPU must support CUDA 11.8 or higher. A
+- GPU with 24GB of memory or more to run all models. 8GB is sufficient for only running JRAP. The GPU must support CUDA 11.8 or higher. A
   possible option is KUDU on DCS batch compute.
 - Package versions are specified `pyproject.toml` in the respective directories.
 
