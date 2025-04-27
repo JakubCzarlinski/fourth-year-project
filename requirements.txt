@@ -1,4 +1,4 @@
-opencv-python
+opencv-python>=4.10.0.84
 diffusers>=0.31.0
 xformers>=0.0.28.post3
 torchvision>=0.20.1
