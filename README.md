@@ -60,10 +60,13 @@ This repository has 2 repositories as submodules:
     ```
 
 4. Install dependencies:
-    ```
+
+    ```bash
     pip install requirements.txt
     ```
+
     or If you have poetry installed
+
     ```bash
     cd ./Models/JRAP
     poetry install
@@ -96,8 +99,8 @@ jrap
 │       ├── DiffusionGuard
 │       ├── photoguard
 │       └── watermark_attacker
-├── fourth-year-project-dataset
-└── 4th-Year-Project-Evaluation
+├── People250
+└── Evaluation
 ```
 
 ## JRAP Model Execution Guide
